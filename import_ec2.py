@@ -5,39 +5,29 @@ import translator
 from record import Record
 import argparse
 
-def main(organization):
-    ec2 = boto3.resource('ec2')
-    instances = ec2.instances.limit(1)
-    active_status = Record('configuration_statuses', name='Active')
-    active_status.first_or_create('name')
-    inactive_status = Record('configuration_statuses', name='Inactive')
-    inactive_status.first_or_create('name')
-    ec2_type = Record('configuration_types', name='EC2')
-    ec2_type.first_or_create('name')
+class EC2ImportError(Exception):
+    pass
+
+def main():
+    args = parse_args()
+    organization = get_organization(args.organization)
+    instances = get_instances()
+    active_status = Record.first_or_create('configuration_statuses', name='Active')
+    inactive_status = Record.first_or_create('configuration_statuses', name='Inactive')
+    ec2_type = Record.first_or_create('configuration_types', name='EC2')
+    locations = {}
     for instance in instances:
-        location_attributes = translator.PlacementTranslator(instance.placement).translated
-        location = Record('locations', organization_id=organization.id, **location_attributes)
-        location.first_or_create('name')
-        instance_attributes = translator.EC2Translator(
+        location = get_or_create_location(instance.placement, locations, organization)
+        configuration = update_or_create_configuration(
             instance,
-            active_status_id=active_status.id,
-            inactive_status_id=inactive_status.id
-        ).translated
-        configuration = Record(
-            'configurations',
-            organization_id=organization.id,
-            location_id=location.id,
-            configuration_type_id=ec2_type.id,
-            **instance_attributes
+            location,
+            organization,
+            ec2_type,
+            active_status,
+            inactive_status
         )
-        primary_ip = instance.private_ip_address
-        interfaces = []
         for interface in instance.network_interfaces:
-            primary = primary_ip == interface.private_ip_address
-            interface_attributes = translator.NetworkInterfaceTranslator(interface).translated
-            config_interface = Record('configuration_interfaces', primary=primary, **interface_attributes)
-            interfaces.append(config_interface)
-        configuration.first_or_create('serial_number', configuration_interfaces=interfaces)
+            update_or_create_config_interface(interface, configuration)
 
     print("Done!")
 
@@ -45,22 +35,66 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Import EC2 instances as Configurations into an IT Glue Organization')
     parser.add_argument('organization', metavar='ORG_ID_OR_NAME',
                         type=str, help='The ID or NAME of the parent organization')
-    args = parser.parse_args()
-    org_id_or_name = args.organization
+    return parser.parse_args()
+
+
+def get_organization(org_id_or_name):
     try:
         org_id = int(org_id_or_name)
-        organization = Record.find('organizations', id=org_id)
+        return Record.find('organizations', id=org_id)
     except ValueError:
         org_name = org_id_or_name
         orgs = Record.filter('organizations', name=org_name)
         try:
-            organization = orgs[0]
+            return orgs[0]
         except IndexError:
-            parser.error(
-                'Organization with name {} not found'.format(org_name))
-    return {'organization': organization}
+            raise EC2ImportError('Organization with name {} not found'.format(org_name))
+
+def get_instances():
+    ec2 = boto3.resource('ec2')
+    # TODO change to all()
+    return ec2.instances.limit(5)
+
+def get_or_create_location(placement, locations, organization):
+    location_translator = translator.PlacementTranslator(placement)
+    location_name = location_translator.translate('name')
+    if locations.get(location_name):
+        return locations[location_name]
+    else:
+        location_attributes = location_translator.translated
+        location = Record.first_or_create('locations', organization_id=organization.id, **location_attributes)
+        locations[location.get_attr('name')] = location
+        return location
+
+def update_or_create_configuration(instance, location, organization, conf_type, active_status, inactive_status):
+    instance_attributes = translator.EC2Translator(
+        instance,
+        active_status_id=active_status.id,
+        inactive_status_id=inactive_status.id
+    ).translated
+    serial_number = instance_attributes.get('serial_number')
+    if serial_number:
+        configuration = Record.find_by('configurations', organization_id=organization.id, serial_number=serial_number)
+    configuration = configuration or Record('configurations', organization_id=organization.id)
+    configuration.set_attributes(location_id=location.id, configuration_type_id=conf_type.id, **instance_attributes)
+    configuration.save()
+    return configuration
+
+
+def update_or_create_config_interface(interface, configuration):
+    interface_ip = interface.private_ip_address
+    interface_attributes = translator.NetworkInterfaceTranslator(interface).translated
+    config_interface = Record.first_or_initialize(
+        'configuration_interfaces',
+        parent=configuration,
+        configuration_id=configuration.id,
+        primary_ip=interface_ip
+    )
+    primary = configuration.get_attr('primary_ip') == interface_ip
+    config_interface.set_attributes(primary=primary, **interface_attributes)
+    config_interface.save()
+    return config_interface
 
 if __name__ == "__main__":
-    args = parse_args()
-    main(**args)
+    main()
 

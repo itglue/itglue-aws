@@ -24,29 +24,16 @@ class Record(object):
         self.attributes[attr_name] = attr_value
         return attr_value
 
-    # TODO
-    # def update_or_create(self, *find_by_attr_names, **args):
-    #     if self.id:
-    #         return self.update(**args)
-    #     else:
-    #         return self.create(**args)
+    def set_attributes(self, **attributes_dict):
+        for attr_name, attr_value in attributes_dict.iteritems():
+            self.set_attr(attr_name, attr_value)
+        return self
 
-    # _process_filter_request(cls, record_type, parent=None, **filters):
-
-    def first_or_create(self, *find_by_attr_names, **create_args):
-        if not find_by_attr_names:
-            raise self.RecordError('at least one attribute name must be provided for matching')
-        filters = {}
-        for attr_name in find_by_attr_names:
-            filters[attr_name] = self.get_attr(attr_name)
-        data_matches = self.__class__._process_filter_request(self.record_type, parent=None, **filters)
-        if data_matches:
-            record = self._reload(data_matches[0])
-            print 'found match', record
-            return record
+    def save(self):
+        if self.id:
+            return self.update()
         else:
-            print 'creating...'
-            return self.create(**create_args)
+            return self.create()
 
     def create(self, parent=None, **relationships):
         if self.id:
@@ -67,13 +54,10 @@ class Record(object):
             self.record_type,
             self.connection.patch,
             parent=parent,
+            id=self.id,
             payload=self.payload()
         )
         return self._reload(data)
-
-    # def _process_request(self, request_func, parent, **request_args):
-    #     path = self.__class__._process_path(self.record_type, parent=parent)
-    #     return request_func(path, **request_args)
 
     def _reload(self, data):
         self.id = data['id']
@@ -110,8 +94,35 @@ class Record(object):
         return cls._load_resource(data)
 
     @classmethod
+    def first_or_create(cls, record_type, parent=None, **attributes):
+        existing_record = cls.find_by(record_type, **attributes)
+        if existing_record:
+            return existing_record
+        return cls(record_type, **attributes).create()
+
+    @classmethod
+    def first_or_initialize(cls, record_type, parent=None, **attributes):
+        existing_record = cls.find_by(record_type, parent, **attributes)
+        if existing_record:
+            return existing_record
+        return cls(record_type, **attributes)
+
+    @classmethod
+    def find_by(cls, record_type, parent=None, **attributes):
+        if not attributes:
+            raise cls.RecordError('at least one attribute must be provided')
+        print('attributes', attributes)
+        matches = cls.filter(record_type, parent, **attributes)
+        if matches:
+            record = matches[0]
+            print 'found match', record
+            return record
+        print 'match not found'
+
+
+    @classmethod
     def _process_request(cls, record_type, request_func, parent=None, id=None, **request_args):
-        path = cls._process_path(record_type, parent=parent)
+        path = cls._process_path(record_type, parent=parent, id=id)
         return request_func(path, **request_args)
 
     @classmethod

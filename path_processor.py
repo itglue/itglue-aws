@@ -1,6 +1,8 @@
+import re
+
 class PathProcessor:
     def __init__(self, resource_type, parent_type=None, parent_id=None, id=None):
-        self.resource_type = str(resource_type)
+        self.resource_type = resource_type
         self.parent_type = parent_type
         self.parent_id = parent_id
         self.id = id
@@ -13,13 +15,15 @@ class PathProcessor:
     def __process_path_list(self):
         path_list = ['']
         if self.parent_type and self.parent_id:
-            path_list.append(str(self.parent_type))
-            path_list.append(str(self.parent_id))
+            path_list.append(self.url_for_type(self.parent_type))
+            path_list.append(self.url_for_type(self.parent_id))
             path_list.append('relationships')
-        path_list.append(self.resource_type)
+        path_list.append(self.url_for_type(self.resource_type))
         if self.id:
             path_list.append(str(self.id))
         return path_list
 
-
+    @staticmethod
+    def url_for_type(record_type):
+        return re.sub('-', '_', str(record_type))
 

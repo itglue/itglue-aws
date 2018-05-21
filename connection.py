@@ -56,14 +56,14 @@ class Connection:
         params_list = []
         for key, value in params.iteritems():
             if value:
-                namespace = '{}[{}]'.format(namespace, key) if namespace else key
+                ns = '{}[{}]'.format(namespace, key) if namespace else key
                 if type(value) is dict:
-                    params_list.append(self._format_params(value, namespace=namespace))
+                    params_list.append(self._format_params(value, namespace=ns))
                 elif type(value) is list:
                     formatted_list = ','.join(map(str, value))
-                    params_list.append("{}={}".format(namespace, formatted_list))
+                    params_list.append("{}={}".format(ns, formatted_list))
                 else:
-                    params_list.append("{}={}".format(namespace, value))
+                    params_list.append("{}={}".format(ns, value))
         return '&'.join(params_list)
 
     def _url_for(self, path):
