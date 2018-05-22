@@ -15,16 +15,20 @@ def main():
     active_status = Record.first_or_create('configuration_statuses', name='Active')
     inactive_status = Record.first_or_create('configuration_statuses', name='Inactive')
     ec2_type = Record.first_or_create('configuration_types', name='EC2')
-    locations = {}
+    if not args.ignore_locations:
+        locations = {}
     for instance in instances:
-        location = get_or_create_location(instance.placement, locations, organization)
+        if args.ignore_locations:
+            location = None
+        else:
+            location = get_or_create_location(instance.placement, locations, organization)
         configuration = update_or_create_configuration(
-            instance,
-            location,
-            organization,
-            ec2_type,
-            active_status,
-            inactive_status
+            instance=instance,
+            location=location,
+            organization=organization,
+            conf_type=ec2_type,
+            active_status=active_status,
+            inactive_status=inactive_status
         )
         for interface in instance.network_interfaces:
             update_or_create_config_interface(interface, configuration)
@@ -33,8 +37,17 @@ def main():
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Import EC2 instances as Configurations into an IT Glue Organization')
-    parser.add_argument('organization', metavar='ORG_ID_OR_NAME',
-                        type=str, help='The ID or NAME of the parent organization')
+    parser.add_argument(
+        'organization',
+        metavar='ORG_ID_OR_NAME',
+        type=str,
+        help='The ID or NAME of the parent organization'
+    )
+    parser.add_argument(
+        '-il', '--ignore-locations',
+        action='store_true',
+        help='Do not import EC2 placements as IT Glue Locations'
+    )
     return parser.parse_args()
 
 
@@ -76,7 +89,8 @@ def update_or_create_configuration(instance, location, organization, conf_type, 
     if serial_number:
         configuration = Record.find_by('configurations', organization_id=organization.id, serial_number=serial_number)
     configuration = configuration or Record('configurations', organization_id=organization.id)
-    configuration.set_attributes(location_id=location.id, configuration_type_id=conf_type.id, **instance_attributes)
+    location_id = location.id if location else None
+    configuration.set_attributes(location_id=location_id, configuration_type_id=conf_type.id, **instance_attributes)
     configuration.save()
     return configuration
 

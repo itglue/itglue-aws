@@ -14,7 +14,10 @@ class Record(object):
 
     def __repr__(self):
         return "<{class_name} type: {type}, id: {id}, attributes: {attributes}>".format(
-            class_name=self.__class__.__name__, type=self.record_type, id=self.id, attributes=self.attributes
+            class_name=self.__class__.__name__,
+            type=self.record_type,
+            id=self.id,
+            attributes=self.attributes
         )
 
     def get_attr(self, attr_name):
@@ -95,7 +98,7 @@ class Record(object):
 
     @classmethod
     def first_or_create(cls, record_type, parent=None, **attributes):
-        existing_record = cls.find_by(record_type, **attributes)
+        existing_record = cls.find_by(record_type, parent, **attributes)
         if existing_record:
             return existing_record
         return cls(record_type, **attributes).create()
@@ -111,14 +114,9 @@ class Record(object):
     def find_by(cls, record_type, parent=None, **attributes):
         if not attributes:
             raise cls.RecordError('at least one attribute must be provided')
-        print('attributes', attributes)
         matches = cls.filter(record_type, parent, **attributes)
         if matches:
-            record = matches[0]
-            print 'found match', record
-            return record
-        print 'match not found'
-
+            return matches[0]
 
     @classmethod
     def _process_request(cls, record_type, request_func, parent=None, id=None, **request_args):
