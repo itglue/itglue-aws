@@ -2,7 +2,7 @@
 
 import boto3
 import translator
-from record import Record
+from itglue import Record
 import argparse
 
 class EC2ImportError(Exception):
@@ -52,16 +52,15 @@ def parse_args():
 
 
 def get_organization(org_id_or_name):
-    try:
+    try: # Try to cast the organization argument into an int to search by ID
         org_id = int(org_id_or_name)
         return Record.find('organizations', id=org_id)
-    except ValueError:
+    except ValueError: # Organization argument is not a valid int, attempt to search by name
         org_name = org_id_or_name
         orgs = Record.filter('organizations', name=org_name)
-        try:
-            return orgs[0]
-        except IndexError:
+        if not orgs:
             raise EC2ImportError('Organization with name {} not found'.format(org_name))
+        return orgs[0]
 
 def get_instances():
     ec2 = boto3.resource('ec2')

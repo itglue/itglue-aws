@@ -3,12 +3,15 @@ import json
 import os
 
 class Connection:
-    def __init__(self):
-        self.api_key = os.environ['ITGLUE_API_KEY']
-        self.host = os.environ['ITGLUE_API_URL']
+    class RequestError(Exception):
+        pass
+
+    def __init__(self, api_key, api_url):
+        self.api_key = api_key
+        self.api_url = api_url
         self.default_headers = {
             'Content-Type': 'application/vnd.api+json',
-            'x-api-key': self.api_key
+            'x-api-key': api_key
         }
 
     def get(self, path, params=None):
@@ -47,10 +50,15 @@ class Connection:
 
 
     def _process_request(self, request_func, url, data=None, params=None):
-        url_formatted_params = self._format_params(params) if params else None
-        response = request_func(url, headers=self.default_headers, data=data, params=url_formatted_params)
-        response.raise_for_status()
-        return response
+        if not self.api_key:
+            raise self.RequestError('API key not defined')
+        try:
+            url_formatted_params = self._format_params(params) if params else None
+            response = request_func(url, headers=self.default_headers, data=data, params=url_formatted_params)
+            response.raise_for_status()
+            return response
+        except requests.exceptions.HTTPError as error:
+            raise self.RequestError(error)
 
     def _format_params(self, params, namespace=None):
         params_list = []
@@ -67,7 +75,9 @@ class Connection:
         return '&'.join(params_list)
 
     def _url_for(self, path):
-        return '{}{}'.format(self.host, path)
+        if not self.api_url:
+            raise self.RequestError('API url not defined')
+        return '{}{}'.format(self.api_url, path)
 
     def process_payload(self, payload, relationships=None):
         if payload:
@@ -81,3 +91,5 @@ class Connection:
     def data_wrap(payload):
         return { 'data': payload }
 
+
+connection = Connection(api_key=os.environ.get('ITGLUE_API_KEY'), api_url=os.environ.get('ITGLUE_API_URL'))

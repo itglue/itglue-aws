@@ -26,4 +26,3 @@ class PathProcessor:
     @staticmethod
     def url_for_type(record_type):
         return re.sub('-', '_', str(record_type))
-
