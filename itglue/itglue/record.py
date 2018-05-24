@@ -1,5 +1,5 @@
-from connection import connection
-from path_processor import PathProcessor
+from . import connection
+from . import process_path
 
 class Record(object):
     class RecordError(Exception):
@@ -17,6 +17,11 @@ class Record(object):
             id=self.id,
             attributes=self.attributes
         )
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.record_type == other.record_type and self.id == other.id and self.attributes == other.attributes
+        return False
 
     def get_attr(self, attr_name):
         """
@@ -42,20 +47,20 @@ class Record(object):
         :param attributes_dict dict: a dictionary containing key-value pairs as attribute names and values to be set
         :returns: the record itself
         """
-        for attr_name, attr_value in attributes_dict.iteritems():
+        for attr_name, attr_value in attributes_dict.items():
             self.set_attr(attr_name, attr_value)
         return self
 
-    def save(self):
+    def save(self, parent=None):
         """
         Either creates a record or updates it (if it already has an id).
         This will trigger an api POST or PATCH request.
         :returns: the record itself
         """
         if self.id:
-            return self.update()
+            return self.update(parent=parent)
         else:
-            return self.create()
+            return self.create(parent=parent)
 
     def create(self, parent=None, **relationships):
         """
@@ -116,7 +121,7 @@ class Record(object):
     def _relationships_payload(relationships):
         # Returns a dict representing the relationships, used as a payload for a request
         rel_payload = {}
-        for rel_name, rel_items in relationships.iteritems():
+        for rel_name, rel_items in relationships.items():
             rel_payload[rel_name] = list(map(lambda rel_item: rel_item.payload(), rel_items))
         return rel_payload
 
@@ -200,8 +205,10 @@ class Record(object):
         :param parent Record: the parent of the record - used for nesting the request url, optional
         :param **attributes: any number of keyword arguments as attributes to search the record by
         :returns: the matching record, None if not found
+        :raises RecordError: if the no valid attributes are provided
         """
-        if not attributes:
+        all_nones = not all(attributes.values())
+        if not attributes or all_nones:
             raise cls.RecordError('at least one attribute must be provided')
         matches = cls.filter(record_type, parent, **attributes)
         if matches:
@@ -217,18 +224,23 @@ class Record(object):
     def _process_filter_request(cls, record_type, parent=None, **filters):
         # Processes a filter get request ensuring the request arguments are formatted properly
         all_nones = not all(filters.values())
-        if all_nones:
+        if not filters or all_nones:
             raise cls.RecordError('at least one valid filter must be provided')
         params = { 'filter': filters }
         return cls._process_request(record_type, connection.get, parent=parent, params=params)
 
     @classmethod
     def _process_path(cls, record_type, parent, id=None):
-        # Delegates path processing to PathProcessor, ensuring the correct arguments are provided
+        # Delegates path processing to path_processor.process_path, ensuring the correct arguments are provided
         if parent:
-            return PathProcessor(record_type, parent_type=parent.record_type, parent_id=parent.id, id=id).path()
+            if not parent.record_type:
+                raise cls.RecordError('provided parent does not have a record_type')
+            elif not parent.id:
+                raise cls.RecordError('provided parent does not have an id')
+            else:
+                return process_path(record_type, parent_type=parent.record_type, parent_id=parent.id, id=id)
         else:
-            return PathProcessor(record_type, id=id).path()
+            return process_path(record_type, id=id)
 
     @classmethod
     def _load_resources(cls, data):

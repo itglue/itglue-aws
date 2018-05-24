@@ -1,2 +1,1 @@
-from . import connection
-from .record import Record
+from .itglue import Record, connection

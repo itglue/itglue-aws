@@ -26,3 +26,7 @@ class PathProcessor:
     @staticmethod
     def url_for_type(record_type):
         return re.sub('-', '_', str(record_type))
+
+
+def process_path(resource_type, parent_type=None, parent_id=None, id=None):
+    return PathProcessor(resource_type, parent_type=parent_type, parent_id=parent_id, id=id).path()

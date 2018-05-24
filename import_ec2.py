@@ -2,23 +2,21 @@
 
 import boto3
 import translator
-from itglue import Record
+import itglue
 import argparse
 
 class EC2ImportError(Exception):
     pass
 
-def main():
-    args = parse_args()
-    organization = get_organization(args.organization)
+def import_ec2_instances(organization, ignore_locations=False):
     instances = get_instances()
-    active_status = Record.first_or_create('configuration_statuses', name='Active')
-    inactive_status = Record.first_or_create('configuration_statuses', name='Inactive')
-    ec2_type = Record.first_or_create('configuration_types', name='EC2')
-    if not args.ignore_locations:
+    active_status = itglue.Record.first_or_create('configuration_statuses', name='Active')
+    inactive_status = itglue.Record.first_or_create('configuration_statuses', name='Inactive')
+    ec2_type = itglue.Record.first_or_create('configuration_types', name='EC2')
+    if not ignore_locations:
         locations = {}
     for instance in instances:
-        if args.ignore_locations:
+        if ignore_locations:
             location = None
         else:
             location = get_or_create_location(instance.placement, locations, organization)
@@ -32,8 +30,6 @@ def main():
         )
         for interface in instance.network_interfaces:
             update_or_create_config_interface(interface, configuration)
-
-    print("Done!")
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Import EC2 instances as Configurations into an IT Glue Organization')
@@ -54,10 +50,10 @@ def parse_args():
 def get_organization(org_id_or_name):
     try: # Try to cast the organization argument into an int to search by ID
         org_id = int(org_id_or_name)
-        return Record.find('organizations', id=org_id)
+        return itglue.Record.find('organizations', id=org_id)
     except ValueError: # Organization argument is not a valid int, attempt to search by name
         org_name = org_id_or_name
-        orgs = Record.filter('organizations', name=org_name)
+        orgs = itglue.Record.filter('organizations', name=org_name)
         if not orgs:
             raise EC2ImportError('Organization with name {} not found'.format(org_name))
         return orgs[0]
@@ -65,7 +61,7 @@ def get_organization(org_id_or_name):
 def get_instances():
     ec2 = boto3.resource('ec2')
     # TODO change to all()
-    return ec2.instances.limit(5)
+    return ec2.instances.limit(20)
 
 def get_or_create_location(placement, locations, organization):
     location_translator = translator.PlacementTranslator(placement)
@@ -74,7 +70,7 @@ def get_or_create_location(placement, locations, organization):
         return locations[location_name]
     else:
         location_attributes = location_translator.translated
-        location = Record.first_or_create('locations', organization_id=organization.id, **location_attributes)
+        location = itglue.Record.first_or_create('locations', organization_id=organization.id, **location_attributes)
         locations[location.get_attr('name')] = location
         return location
 
@@ -86,8 +82,8 @@ def update_or_create_configuration(instance, location, organization, conf_type, 
     ).translated
     serial_number = instance_attributes.get('serial_number')
     if serial_number:
-        configuration = Record.find_by('configurations', organization_id=organization.id, serial_number=serial_number)
-    configuration = configuration or Record('configurations', organization_id=organization.id)
+        configuration = itglue.Record.find_by('configurations', organization_id=organization.id, serial_number=serial_number)
+    configuration = configuration or itglue.Record('configurations', organization_id=organization.id)
     location_id = location.id if location else None
     configuration.set_attributes(location_id=location_id, configuration_type_id=conf_type.id, **instance_attributes)
     configuration.save()
@@ -97,7 +93,7 @@ def update_or_create_configuration(instance, location, organization, conf_type, 
 def update_or_create_config_interface(interface, configuration):
     interface_ip = interface.private_ip_address
     interface_attributes = translator.NetworkInterfaceTranslator(interface).translated
-    config_interface = Record.first_or_initialize(
+    config_interface = itglue.Record.first_or_initialize(
         'configuration_interfaces',
         parent=configuration,
         configuration_id=configuration.id,
@@ -107,6 +103,13 @@ def update_or_create_config_interface(interface, configuration):
     config_interface.set_attributes(primary=primary, **interface_attributes)
     config_interface.save()
     return config_interface
+
+def main():
+    args = parse_args()
+    ignore_locations = args.ignore_locations
+    organization = get_organization(args.organization)
+    import_ec2_instances(organization, ignore_locations=ignore_locations)
+    print("Done!")
 
 if __name__ == "__main__":
     main()

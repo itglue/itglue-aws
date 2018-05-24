@@ -52,17 +52,16 @@ class Connection:
     def _process_request(self, request_func, url, data=None, params=None):
         if not self.api_key:
             raise self.RequestError('API key not defined')
-        try:
-            url_formatted_params = self._format_params(params) if params else None
-            response = request_func(url, headers=self.default_headers, data=data, params=url_formatted_params)
-            response.raise_for_status()
-            return response
-        except requests.exceptions.HTTPError as error:
-            raise self.RequestError(error)
+        url_formatted_params = self._format_params(params) if params else None
+        response = request_func(url, headers=self.default_headers, data=data, params=url_formatted_params)
+        if response.status_code not in range(200, 299):
+            message = 'Request failed with response code {} and body {}'.format(response.status_code, response.content)
+            raise self.RequestError(message)
+        return response
 
     def _format_params(self, params, namespace=None):
         params_list = []
-        for key, value in params.iteritems():
+        for key, value in params.items():
             if value:
                 ns = '{}[{}]'.format(namespace, key) if namespace else key
                 if type(value) is dict:
@@ -83,7 +82,7 @@ class Connection:
         if payload:
             if relationships:
                 payload['relationships'] = {}
-                for rel_name, rel_items in relationships.iteritems():
+                for rel_name, rel_items in relationships.items():
                     payload['relationships'][rel_name] = self.data_wrap(rel_items)
             return json.dumps(self.data_wrap(payload))
 

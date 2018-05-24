@@ -26,7 +26,7 @@ class TranslatorBase(object):
 
     def _format_notes(self, notes_dict):
         notes_list = []
-        for key, value in notes_dict.iteritems():
+        for key, value in notes_dict.items():
             notes_list.append('{}: \t{}'.format(key, value))
         return '\n'.join(notes_list)
 
