@@ -17,7 +17,6 @@ class Connection:
     def get(self, path, params=None):
         url = self._url_for(path)
         response = self._process_request(requests.get, url, params=params)
-        print(response.url)
         return self._process_response(response)
 
     def post(self, path, payload=None, relationships=None):

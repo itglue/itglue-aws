@@ -34,7 +34,6 @@ class TranslatorBase(object):
 class EC2Translator(TranslatorBase):
     FIELDS = [
         'name',
-        'primary_ip',
         'serial_number',
         'purchased_at',
         'configuration_status_id',
@@ -54,9 +53,6 @@ class EC2Translator(TranslatorBase):
         for tag in self.data.tags or []:
             if tag['Key'] == 'Name':
                 return tag['Value']
-
-    def _primary_ip(self):
-        return self.data.private_ip_address
 
     def _serial_number(self):
         return self.data.instance_id
