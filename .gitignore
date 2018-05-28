@@ -1,2 +1,2 @@
 *.pyc
-.itglue-aws/
+env/
