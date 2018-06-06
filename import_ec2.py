@@ -2,7 +2,7 @@
 
 import boto3
 import translator
-from itglue import Record
+import itglue
 from multiprocessing import Process
 import argparse
 
@@ -12,10 +12,10 @@ class EC2ImportError(Exception):
 def get_organization(org_id_or_name):
     try:  # Try to cast the organization argument into an int to search by ID
         org_id = int(org_id_or_name)
-        return Record.find('organizations', id=org_id)
+        return itglue.Organization.find(org_id)
     except ValueError:  # Organization argument is not a valid int, attempt to search by name
         org_name = org_id_or_name
-        orgs = Record.filter('organizations', name=org_name)
+        orgs = itglue.Organization.filter(name=org_name)
         if not orgs:
             raise EC2ImportError(
                 'Organization with name {} not found'.format(org_name))
@@ -23,10 +23,10 @@ def get_organization(org_id_or_name):
 
 def import_ec2_instances(organization, ignore_locations=False):
     instances = get_instances()
-    active_status = Record.first_or_create('configuration_statuses', name='Active')
-    inactive_status = Record.first_or_create('configuration_statuses', name='Inactive')
-    ec2_type = Record.first_or_create('configuration_types', name='EC2')
-    # locations = Record.get('locations', parent=organization) if not ignore_locations else []
+    active_status = itglue.ConfigurationStatus.first_or_create(name='Active')
+    inactive_status = itglue.ConfigurationStatus.first_or_create(name='Inactive')
+    ec2_type = itglue.ConfigurationType.first_or_create(name='EC2')
+
     # create a dict to memoize the locations
     locations_dict = {}
 
@@ -48,7 +48,7 @@ def import_ec2_instances(organization, ignore_locations=False):
                 kwargs['location'] = locations_dict[location_name]
             else:
                 location_attributes = location_translator.translated
-                location = Record.first_or_create('locations', organization_id=organization.id, **location_attributes)
+                location = itglue.Location.first_or_create(organization_id=organization.id, **location_attributes)
                 locations_dict[location_name] = location
                 kwargs['location'] = location
         process = Process(target=update_configuration_and_interfaces, kwargs=kwargs)
@@ -87,9 +87,9 @@ def update_or_create_configuration(instance, location, organization, conf_type, 
     ).translated
     serial_number = instance_attributes.get('serial_number')
     if serial_number:
-        configuration = Record.find_by('configurations', organization_id=organization.id, serial_number=serial_number)
+        configuration = itglue.Configuration.find_by(organization_id=organization.id, serial_number=serial_number)
 
-    configuration = configuration or Record('configurations', organization_id=organization.id)
+    configuration = configuration or itglue.Configuration(organization_id=organization.id)
     location_id = location.id if location else None
     configuration.set_attributes(location_id=location_id, configuration_type_id=conf_type.id, **instance_attributes)
     configuration.save()
@@ -97,8 +97,7 @@ def update_or_create_configuration(instance, location, organization, conf_type, 
 
 def update_or_create_config_interface(interface, configuration, primary=False):
     interface_attributes = translator.NetworkInterfaceTranslator(interface).translated
-    config_interface = Record.first_or_initialize(
-        'configuration_interfaces',
+    config_interface = itglue.ConfigurationInterface.first_or_initialize(
         parent=configuration,
         configuration_id=configuration.id,
         primary_ip=interface.private_ip_address
@@ -107,6 +106,8 @@ def update_or_create_config_interface(interface, configuration, primary=False):
     config_interface.save()
     return config_interface
 
+
+# Command-line functions
 def main():
     args = parse_args()
     ignore_locations = args.ignore_locations
