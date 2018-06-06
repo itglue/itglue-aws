@@ -108,7 +108,6 @@ def update_or_create_config_interface(interface, configuration, primary=False):
 
 
 # Command-line functions
-
 def main():
     args = parse_args()
     ignore_locations = args.ignore_locations

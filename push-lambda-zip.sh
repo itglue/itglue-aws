@@ -1,5 +1,5 @@
 cwd=$(pwd)
-zip -r -X ${cwd}/lambda_handler.zip *.py itglue/*.py itglue/itglue/*.py
+zip -r -X ${cwd}/lambda_handler.zip *.py
 echo "Please wait, compiling packages..."
 cd ${cwd}/venv/python3/lib/python3.6/site-packages/ &&  zip -q -r9 ${cwd}/lambda_handler.zip *
 cd ${cwd}
