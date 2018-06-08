@@ -51,8 +51,14 @@ class EC2Translator(TranslatorBase):
 
     def _name(self):
         for tag in self.data.tags or []:
-            if tag['Key'] == 'Name':
+            if tag['Key'] == 'Name' and tag.get('Value'):
                 return tag['Value']
+        # Fallback in case the EC2 instance does not have a name (required)
+        if self.data.key_name:
+            return self.data.key_name
+        elif self.data.instance_id:
+            return self.data.instance_id
+        return '[Unnamed Instance]'
 
     def _serial_number(self):
         return self.data.instance_id

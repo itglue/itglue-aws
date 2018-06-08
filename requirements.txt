@@ -5,6 +5,7 @@ chardet==3.0.4
 docutils==0.14
 futures==3.2.0
 idna==2.6
+itglue==0.1.0
 jmespath==0.9.3
 python-dateutil==2.7.3
 requests==2.18.4
