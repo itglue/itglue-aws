@@ -17,8 +17,7 @@ def get_organization(org_id_or_name):
         org_name = org_id_or_name
         orgs = itglue.Organization.filter(name=org_name)
         if not orgs:
-            raise EC2ImportError(
-                'Organization with name {} not found'.format(org_name))
+            raise EC2ImportError('Organization with name {} not found'.format(org_name))
         return orgs[0]
 
 def import_ec2_instances(organization, ignore_locations=False):
