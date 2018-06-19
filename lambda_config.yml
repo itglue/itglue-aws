@@ -1,0 +1,191 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Creates a lambda function with roles to read EC2 instances and create Cloudwatch logs"
+Parameters:
+  ITGlueAPIURL:
+    Default: https://api.itglue.com
+    Description: The url of the IT Glue API
+    Type: String
+  ITGlueAPIKey:
+    NoEcho: true
+    Description: The IT Glue API Key
+    Type: String
+    MinLength: 1
+  ITGlueOrganization:
+    Description: The name or ID of the IT Glue Organization
+    Type: String
+    MinLength: 1
+
+Resources:
+  LambdaExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: "sts:AssumeRole"
+
+  CloudWatchLogAccessPolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "cloud_watch_logs_access"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Action:
+              - "logs:*"
+            Resource: "*"
+      Roles:
+        -
+          Ref: "LambdaExecutionRole"
+
+  EC2ReadPolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "ec2_read_access"
+      Roles:
+        -
+          Ref: "LambdaExecutionRole"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Resource: "*"
+            Action:
+              - "ec2:DescribeInstances"
+              - "ec2:DescribeVolumesModifications"
+              - "ec2:GetHostReservationPurchasePreview"
+              - "ec2:DescribeSnapshots"
+              - "ec2:DescribePlacementGroups"
+              - "ec2:GetConsoleScreenshot"
+              - "ec2:DescribeHostReservationOfferings"
+              - "ec2:DescribeInternetGateways"
+              - "ec2:GetLaunchTemplateData"
+              - "ec2:DescribeVolumeStatus"
+              - "ec2:DescribeScheduledInstanceAvailability"
+              - "ec2:DescribeSpotDatafeedSubscription"
+              - "ec2:DescribeVolumes"
+              - "ec2:DescribeFpgaImageAttribute"
+              - "ec2:DescribeExportTasks"
+              - "ec2:DescribeAccountAttributes"
+              - "ec2:DescribeNetworkInterfacePermissions"
+              - "ec2:DescribeReservedInstances"
+              - "ec2:DescribeKeyPairs"
+              - "ec2:DescribeNetworkAcls"
+              - "ec2:DescribeRouteTables"
+              - "ec2:DescribeReservedInstancesListings"
+              - "ec2:DescribeEgressOnlyInternetGateways"
+              - "ec2:DescribeSpotFleetRequestHistory"
+              - "ec2:DescribeLaunchTemplates"
+              - "ec2:DescribeVpcClassicLinkDnsSupport"
+              - "ec2:DescribeVpnConnections"
+              - "ec2:DescribeSnapshotAttribute"
+              - "ec2:DescribeVpcPeeringConnections"
+              - "ec2:DescribeReservedInstancesOfferings"
+              - "ec2:DescribeIdFormat"
+              - "ec2:DescribeVpcEndpointServiceConfigurations"
+              - "ec2:DescribePrefixLists"
+              - "ec2:GetReservedInstancesExchangeQuote"
+              - "ec2:DescribeVolumeAttribute"
+              - "ec2:DescribeInstanceCreditSpecifications"
+              - "ec2:DescribeVpcClassicLink"
+              - "ec2:DescribeImportSnapshotTasks"
+              - "ec2:DescribeVpcEndpointServicePermissions"
+              - "ec2:GetPasswordData"
+              - "ec2:DescribeScheduledInstances"
+              - "ec2:DescribeImageAttribute"
+              - "ec2:DescribeVpcEndpoints"
+              - "ec2:DescribeReservedInstancesModifications"
+              - "ec2:DescribeElasticGpus"
+              - "ec2:DescribeSubnets"
+              - "ec2:DescribeVpnGateways"
+              - "ec2:DescribeMovingAddresses"
+              - "ec2:DescribeAddresses"
+              - "ec2:DescribeInstanceAttribute"
+              - "ec2:DescribeRegions"
+              - "ec2:DescribeFlowLogs"
+              - "ec2:DescribeDhcpOptions"
+              - "ec2:DescribeVpcEndpointServices"
+              - "ec2:DescribeSpotInstanceRequests"
+              - "ec2:DescribeVpcAttribute"
+              - "ec2:GetConsoleOutput"
+              - "ec2:DescribeSpotPriceHistory"
+              - "ec2:DescribeNetworkInterfaces"
+              - "ec2:DescribeAvailabilityZones"
+              - "ec2:DescribeNetworkInterfaceAttribute"
+              - "ec2:DescribeVpcEndpointConnections"
+              - "ec2:DescribeInstanceStatus"
+              - "ec2:DescribeHostReservations"
+              - "ec2:DescribeIamInstanceProfileAssociations"
+              - "ec2:DescribeTags"
+              - "ec2:DescribeLaunchTemplateVersions"
+              - "ec2:DescribeBundleTasks"
+              - "ec2:DescribeIdentityIdFormat"
+              - "ec2:DescribeImportImageTasks"
+              - "ec2:DescribeClassicLinkInstances"
+              - "ec2:DescribeNatGateways"
+              - "ec2:DescribeCustomerGateways"
+              - "ec2:DescribeVpcEndpointConnectionNotifications"
+              - "ec2:DescribeSecurityGroups"
+              - "ec2:DescribeSpotFleetRequests"
+              - "ec2:DescribeHosts"
+              - "ec2:DescribeImages"
+              - "ec2:DescribeFpgaImages"
+              - "ec2:DescribeSpotFleetInstances"
+              - "ec2:DescribeSecurityGroupReferences"
+              - "ec2:DescribeVpcs"
+              - "ec2:DescribeConversionTasks"
+              - "ec2:DescribeStaleSecurityGroups"
+
+  EC2SyncFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      FunctionName: "ITGlueEC2SyncFunction"
+      Handler: "lambda_handler.handler"
+      Role: !GetAtt [ LambdaExecutionRole, Arn ]
+      Code:
+        ZipFile: fileb://lambda_handler.zip
+      Environment:
+        Variables:
+          ITGLUE_API_KEY:
+            Ref: ITGlueAPIKey
+          ITGLUE_API_URL:
+            Ref: ITGlueAPIURL
+          ORGANIZATION:
+            Ref: ITGlueOrganization
+      Runtime: "python3.6"
+      Timeout: "60"
+
+  EC2StateEventRule:
+    Type: "AWS::Events::Rule"
+    Properties:
+      Description: "EC2StateEventRule"
+      EventPattern:
+        source:
+          - "aws.ec2"
+        detail-type:
+          - "EC2 Instance State-change Notification"
+      Targets:
+        -
+          Arn:
+            Fn::GetAtt:
+              - "EC2SyncFunction"
+              - "Arn"
+          Id: "ITGlueEC2SyncFunction"
+
+  PermissionForEventsToInvokeLambda:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName:
+        Ref: "EC2SyncFunction"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn:
+        Fn::GetAtt:
+          - "EC2StateEventRule"
+          - "Arn"
