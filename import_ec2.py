@@ -6,6 +6,7 @@ import itglue
 from multiprocessing import Process
 import argparse
 
+BATCH_SIZE = 100
 
 class EC2ImportError(Exception):
     pass
@@ -40,19 +41,29 @@ def import_ec2_instances(organization, import_locations=True, instance_id=None):
 
     if instance_id:
         instance = get_instances(instance_id)
-        process = configure_instance(kwargs, instance, import_locations, organization.id)
-        processes.append(process)
+        process = configure_instance(instance, import_locations, organization.id, kwargs)
+        process.start()
+        process.join()
     else:
         instances = get_instances()
         for instance in instances:
-            process = configure_instance(kwargs, instance, import_locations, organization.id)
+            process = configure_instance(instance, import_locations, organization.id, kwargs)
             processes.append(process)
-    # start all processes
-    for process in processes:
-        process.start()
-    # make sure that all processes have finished
-    for process in processes:
-        process.join()
+        batch_start_processes(processes)
+
+
+def batch_start_processes(processes):
+    counter = 0
+    total_count = counter + BATCH_SIZE
+    while counter < len(processes):
+        if total_count > len(processes):
+            total_count = len(processes)
+        for index in range(counter, total_count):
+            processes[index].start()
+        for index in range(counter, total_count):
+            processes[index].join()
+        counter += BATCH_SIZE
+        total_count = counter + BATCH_SIZE
 
 
 def get_instances(instance_id=None):
@@ -63,7 +74,7 @@ def get_instances(instance_id=None):
     return ec2.instances.all()
 
 
-def configure_instance(kwargs, instance, import_locations, organization_id):
+def configure_instance(instance, import_locations, organization_id, kwargs):
     locations_dict = {}
     kwargs['instance'] = instance
     if import_locations:
