@@ -1,37 +1,7 @@
-import json
-
-class TranslatorBase(object):
-    FIELDS = []
-    RELATIONSHIPS = []
-
-    class TranslatorError(Exception):
-        pass
-
-    def __init__(self, data, **options):
-        self.data = data
-        self.options = options
-        self.attributes = {}
-
-    @property
-    def translated(self):
-        for attribute in self.FIELDS:
-            if self.attributes.get(attribute) is None:
-                self.translate(attribute)
-        return self.attributes
-
-    def translate(self, field):
-        if not self.attributes.get(field):
-            self.attributes[field] = getattr(self, '_{}'.format(field))()
-        return self.attributes[field]
-
-    def _format_notes(self, notes_dict):
-        notes_list = []
-        for key, value in notes_dict.items():
-            notes_list.append('{}: \t{}'.format(key, value))
-        return '\n'.join(notes_list)
+import base_translator
 
 
-class EC2Translator(TranslatorBase):
+class EC2Translator(base_translator.BaseTranslator):
     FIELDS = [
         'name',
         'serial_number',
@@ -106,25 +76,3 @@ class EC2Translator(TranslatorBase):
     def _availability_zone(self):
         if self.data.placement:
             return self.data.placement.get('AvailabilityZone')
-
-class NetworkInterfaceTranslator(TranslatorBase):
-    FIELDS = [
-        'name',
-        'ip_address',
-        'notes'
-    ]
-
-    def _name(self):
-        return self.data.id
-
-    def _ip_address(self):
-        return self.data.private_ip_address
-
-    def _notes(self):
-        return self._format_notes({'vpc_id': self.data.vpc_id, 'subnet_id': self.data.subnet_id})
-
-class PlacementTranslator(TranslatorBase):
-    FIELDS = ['name']
-
-    def _name(self):
-        return self.data.get('AvailabilityZone')

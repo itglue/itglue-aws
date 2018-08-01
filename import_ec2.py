@@ -1,12 +1,15 @@
 #!/usr/bin/env/python
 
 import boto3
-import translator
+import ec2_translator
+import placement_translator
+import network_interface_translator
 import itglue
 from multiprocessing import Process
 import argparse
 
 BATCH_SIZE = 100
+
 
 class EC2ImportError(Exception):
     pass
@@ -78,7 +81,7 @@ def configure_instance(instance, import_locations, organization_id, kwargs):
     locations_dict = {}
     kwargs['instance'] = instance
     if import_locations:
-        location_translator = translator.PlacementTranslator(instance.placement)
+        location_translator = placement_translator.PlacementTranslator(instance.placement)
         location_name = location_translator.translate('name')
         if locations_dict.get(location_name):
             kwargs['location'] = locations_dict[location_name]
@@ -106,7 +109,7 @@ def update_configuration_and_interfaces(organization, instance, conf_type, activ
 
 
 def update_or_create_configuration(instance, location, organization, conf_type, active_status, inactive_status):
-    instance_attributes = translator.EC2Translator(
+    instance_attributes = ec2_translator.EC2Translator(
         instance,
         active_status_id=active_status.id,
         inactive_status_id=inactive_status.id
@@ -123,7 +126,7 @@ def update_or_create_configuration(instance, location, organization, conf_type, 
 
 
 def update_or_create_config_interface(interface, configuration, primary=False):
-    interface_attributes = translator.NetworkInterfaceTranslator(interface).translated
+    interface_attributes = network_interface_translator.NetworkInterfaceTranslator(interface).translated
     config_interface = itglue.ConfigurationInterface.first_or_initialize(
         parent=configuration,
         configuration_id=configuration.id,
