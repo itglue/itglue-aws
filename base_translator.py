@@ -1,6 +1,5 @@
 class BaseTranslator(object):
     FIELDS = []
-    RELATIONSHIPS = []
 
     class TranslatorError(Exception):
         pass

@@ -10,9 +10,6 @@ class EC2Translator(base_translator.BaseTranslator):
         'mac_address',
         'notes'
     ]
-    RELATIONSHIPS = [
-        'configuration_interfaces'
-    ]
 
     def primary_interface(self):
         for interface in self.data.network_interfaces:
