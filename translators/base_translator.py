@@ -25,3 +25,4 @@ class BaseTranslator(object):
         notes_list = []
         for key, value in notes_dict.items():
             notes_list.append('{}: \t{}'.format(key, value))
+        return '\n'.join(notes_list)
