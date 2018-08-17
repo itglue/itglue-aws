@@ -1,7 +1,7 @@
-import base_translator
+import translators.base_translator
 
 
-class EC2Translator(base_translator.BaseTranslator):
+class EC2Translator(translators.base_translator.BaseTranslator):
     FIELDS = [
         'name',
         'serial_number',

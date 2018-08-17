@@ -1,7 +1,7 @@
-import base_translator
+import translators.base_translator
 
 
-class NetworkInterfaceTranslator(base_translator.BaseTranslator):
+class NetworkInterfaceTranslator(translators.base_translator.BaseTranslator):
     FIELDS = [
         'name',
         'ip_address',

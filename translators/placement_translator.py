@@ -1,7 +1,7 @@
-import base_translator
+import translators.base_translator
 
 
-class PlacementTranslator(base_translator.BaseTranslator):
+class PlacementTranslator(translators.base_translator.BaseTranslator):
     FIELDS = ['name']
 
     def _name(self):
