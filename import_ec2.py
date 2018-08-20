@@ -17,6 +17,7 @@ class EC2ImportError(Exception):
 
 def import_ec2_instances(organization, import_locations=True, instance_id=None):
     ec2_type = itglue.ConfigurationType.first_or_create(name='EC2')
+    active_status, inactive_status = importer_wrapper.get_or_create_config_statuses()
 
     # create a list to keep all processes
     processes = []
@@ -28,13 +29,13 @@ def import_ec2_instances(organization, import_locations=True, instance_id=None):
 
     if instance_id:
         instance = get_instances(instance_id)
-        process = configure_instance(instance, import_locations, organization, kwargs)
-        process.start()
-        process.join()
+        instance_kwargs = configure_instance(instance, import_locations, organization.id, active_status, inactive_status, kwargs)
+        update_configuration_and_interfaces(instance, **instance_kwargs)
     else:
         instances = get_instances()
         for instance in instances:
-            process = configure_instance(instance, import_locations, organization, kwargs)
+            instance_kwargs = configure_instance(instance, import_locations, organization.id, active_status, inactive_status, kwargs)
+            process = Process(target=update_configuration_and_interfaces, args=(instance,), kwargs=instance_kwargs)
             processes.append(process)
         batch_start_processes(processes)
 
@@ -61,17 +62,14 @@ def get_instances(instance_id=None):
     return ec2.instances.all()
 
 
-def configure_instance(instance, import_locations, organization, kwargs):
-    active_status = itglue.ConfigurationStatus.first_or_create(name='Active')
-    inactive_status = itglue.ConfigurationStatus.first_or_create(name='Inactive')
+def configure_instance(instance, import_locations, organization_id, active_status, inactive_status, kwargs):
     kwargs['translated_instance'] = translate_instances(instance, active_status, inactive_status)
     if import_locations:
         location_attributes = translators.placement_translator.PlacementTranslator(instance.placement).translated
-        location_attributes['organization_id'] = organization.id
-        location = itglue.Location.first_or_create(parent=organization, **location_attributes)
+        location_attributes['organization_id'] = organization_id
+        location = itglue.Location.first_or_create(parent=kwargs['organization'], **location_attributes)
         kwargs['location'] = location
-    process = Process(target=update_configuration_and_interfaces, args=(instance,), kwargs=kwargs)
-    return process
+    return kwargs
 
 
 def update_configuration_and_interfaces(instance, organization, translated_instance, conf_type, location=None):

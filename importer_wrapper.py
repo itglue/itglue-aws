@@ -41,3 +41,9 @@ def update_or_create_config_interface(interface, configuration, primary=False):
     )
     config_interface.set_attributes(primary=primary, **interface_attributes)
     config_interface.save()
+
+
+def get_or_create_config_statuses():
+    active_status = itglue.ConfigurationStatus.first_or_create(name='Active')
+    inactive_status = itglue.ConfigurationStatus.first_or_create(name='Inactive')
+    return active_status, inactive_status
