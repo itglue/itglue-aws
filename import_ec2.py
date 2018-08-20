@@ -44,13 +44,13 @@ def import_ec2_instances(organization, import_locations=True, instance_id=None):
 
     if instance_id:
         instance = get_instances(instance_id)
-        process = configure_instance(instance, import_locations, organization.id, kwargs)
-        process.start()
-        process.join()
+        instance_kwargs = configure_instance(instance, import_locations, organization.id, kwargs)
+        update_configuration_and_interfaces(**instance_kwargs)
     else:
         instances = get_instances()
         for instance in instances:
-            process = configure_instance(instance, import_locations, organization.id, kwargs)
+            instance_kwargs = configure_instance(instance, import_locations, organization.id, kwargs)
+            process = Process(target=update_configuration_and_interfaces, kwargs=instance_kwargs)
             processes.append(process)
         batch_start_processes(processes)
 
@@ -90,8 +90,7 @@ def configure_instance(instance, import_locations, organization_id, kwargs):
             location = itglue.Location.first_or_create(organization_id=organization_id, **location_attributes)
             locations_dict[location_name] = location
             kwargs['location'] = location
-    process = Process(target=update_configuration_and_interfaces, kwargs=kwargs)
-    return process
+    return kwargs
 
 
 def update_configuration_and_interfaces(organization, instance, conf_type, active_status, inactive_status, location=None):
