@@ -8,7 +8,7 @@ import itglue_adapter
 from multiprocessing import Process
 import argparse
 
-BATCH_SIZE = 100
+PROCESS_BATCH_SIZE = 100
 
 
 class EC2ImportError(Exception):
@@ -42,7 +42,7 @@ def import_ec2_instances(organization, import_locations=True, instance_id=None):
 
 def batch_start_processes(processes):
     counter = 0
-    total_count = counter + BATCH_SIZE
+    total_count = counter + PROCESS_BATCH_SIZE
     while counter < len(processes):
         if total_count > len(processes):
             total_count = len(processes)
@@ -50,8 +50,8 @@ def batch_start_processes(processes):
             processes[index].start()
         for index in range(counter, total_count):
             processes[index].join()
-        counter += BATCH_SIZE
-        total_count = counter + BATCH_SIZE
+        counter += PROCESS_BATCH_SIZE
+        total_count = counter + PROCESS_BATCH_SIZE
 
 
 def get_instances(instance_id=None):
