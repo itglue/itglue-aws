@@ -4,7 +4,7 @@ import boto3
 import translators.ec2_translator
 import translators.placement_translator
 import itglue
-import importer_wrapper
+import itglue_adapter
 from multiprocessing import Process
 import argparse
 
@@ -17,24 +17,24 @@ class EC2ImportError(Exception):
 
 def import_ec2_instances(organization, import_locations=True, instance_id=None):
     ec2_type = itglue.ConfigurationType.first_or_create(name='EC2')
-    active_status, inactive_status = importer_wrapper.get_or_create_config_statuses()
+    active_status, inactive_status = itglue_adapter.get_or_create_config_statuses()
 
     # create a list to keep all processes
     processes = []
 
-    kwargs = {
+    instance_attributes = {
         'organization': organization,
         'conf_type': ec2_type
     }
 
     if instance_id:
         instance = get_instances(instance_id)
-        instance_kwargs = configure_instance(instance, import_locations, organization.id, active_status, inactive_status, kwargs)
+        instance_kwargs = configure_instance(instance, import_locations, organization.id, active_status, inactive_status, instance_attributes)
         update_configuration_and_interfaces(instance, **instance_kwargs)
     else:
         instances = get_instances()
         for instance in instances:
-            instance_kwargs = configure_instance(instance, import_locations, organization.id, active_status, inactive_status, kwargs)
+            instance_kwargs = configure_instance(instance, import_locations, organization.id, active_status, inactive_status, instance_attributes)
             process = Process(target=update_configuration_and_interfaces, args=(instance,), kwargs=instance_kwargs)
             processes.append(process)
         batch_start_processes(processes)
@@ -62,18 +62,18 @@ def get_instances(instance_id=None):
     return ec2.instances.all()
 
 
-def configure_instance(instance, import_locations, organization_id, active_status, inactive_status, kwargs):
-    kwargs['translated_instance'] = translate_instances(instance, active_status, inactive_status)
+def configure_instance(instance, import_locations, organization_id, active_status, inactive_status, instance_attributes):
+    instance_attributes['translated_instance'] = translate_instances(instance, active_status, inactive_status)
     if import_locations:
         location_attributes = translators.placement_translator.PlacementTranslator(instance.placement).translated
         location_attributes['organization_id'] = organization_id
-        location = itglue.Location.first_or_create(parent=kwargs['organization'], **location_attributes)
-        kwargs['location'] = location
-    return kwargs
+        location = itglue.Location.first_or_create(parent=instance_attributes['organization'], **location_attributes)
+        instance_attributes['location'] = location
+    return instance_attributes
 
 
 def update_configuration_and_interfaces(instance, organization, translated_instance, conf_type, location=None):
-    configuration = importer_wrapper.update_or_create_configuration(
+    configuration = itglue_adapter.update_or_create_configuration(
         resource=translated_instance,
         location=location,
         organization=organization,
@@ -81,16 +81,16 @@ def update_configuration_and_interfaces(instance, organization, translated_insta
     )
     for interface in instance.network_interfaces:
         primary = instance.private_ip_address == interface.private_ip_address
-        importer_wrapper.update_or_create_config_interface(interface, configuration, primary=primary)
+        itglue_adapter.update_or_create_config_interface(interface, configuration, primary=primary)
 
 
 def translate_instances(instance, active_status, inactive_status):
-    instance_attributes = translators.ec2_translator.EC2Translator(
+    translated_instance = translators.ec2_translator.EC2Translator(
         instance,
         active_status_id=active_status.id,
         inactive_status_id=inactive_status.id
     )
-    return instance_attributes.translated
+    return translated_instance.translated
 
 
 # Command-line functions
@@ -100,7 +100,7 @@ def main():
     id = args.instance_id
     if args.add_all and id:
         id = None
-    organization = importer_wrapper.get_organization(args.organization)
+    organization = itglue_adapter.get_organization(args.organization)
     import_ec2_instances(organization, import_locations=import_locations, instance_id=id)
     return True
 
