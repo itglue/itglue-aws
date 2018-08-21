@@ -26,8 +26,8 @@ def update_or_create_configuration(resource, organization, conf_type, location=N
         filters['serial_number'] = resource.get('serial_number')
     configuration = itglue.Configuration.find_by(**filters) or itglue.Configuration(organization_id=organization.id)
     if location:
-        location_id = location.id
-    configuration.set_attributes(location_id=location_id, configuration_type_id=conf_type.id, **resource)
+        resource['location_id'] = location.id
+    configuration.set_attributes(configuration_type_id=conf_type.id, **resource)
     configuration.save()
     return configuration
 

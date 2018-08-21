@@ -1,5 +1,5 @@
 from import_ec2 import import_ec2_instances
-from importer_wrapper import get_organization
+from itglue_adapter import get_organization
 import os
 
 
