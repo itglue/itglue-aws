@@ -1,6 +1,8 @@
 import itglue
 import translators.network_interface_translator
 
+PROCESS_BATCH_SIZE = 100
+
 
 class ImportError(Exception):
     pass
@@ -47,3 +49,17 @@ def get_or_create_config_statuses():
     active_status = itglue.ConfigurationStatus.first_or_create(name='Active')
     inactive_status = itglue.ConfigurationStatus.first_or_create(name='Inactive')
     return active_status, inactive_status
+
+
+def batch_start_processes(processes):
+    counter = 0
+    total_count = counter + PROCESS_BATCH_SIZE
+    while counter < len(processes):
+        if total_count > len(processes):
+            total_count = len(processes)
+        for index in range(counter, total_count):
+            processes[index].start()
+        for index in range(counter, total_count):
+            processes[index].join()
+        counter += PROCESS_BATCH_SIZE
+        total_count = counter + PROCESS_BATCH_SIZE

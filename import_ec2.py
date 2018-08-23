@@ -8,8 +8,6 @@ import itglue_adapter
 from multiprocessing import Process
 import argparse
 
-PROCESS_BATCH_SIZE = 100
-
 
 class EC2ImportError(Exception):
     pass
@@ -37,21 +35,7 @@ def import_ec2_instances(organization, import_locations=True, instance_id=None):
             instance_kwargs = configure_instance(instance, import_locations, organization.id, active_status, inactive_status, instance_attributes)
             process = Process(target=update_configuration_and_interfaces, args=(instance,), kwargs=instance_kwargs)
             processes.append(process)
-        batch_start_processes(processes)
-
-
-def batch_start_processes(processes):
-    counter = 0
-    total_count = counter + PROCESS_BATCH_SIZE
-    while counter < len(processes):
-        if total_count > len(processes):
-            total_count = len(processes)
-        for index in range(counter, total_count):
-            processes[index].start()
-        for index in range(counter, total_count):
-            processes[index].join()
-        counter += PROCESS_BATCH_SIZE
-        total_count = counter + PROCESS_BATCH_SIZE
+        itglue_adapter.batch_start_processes(processes)
 
 
 def get_instances(instance_id=None):
