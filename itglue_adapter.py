@@ -34,12 +34,18 @@ def update_or_create_configuration(resource, organization, conf_type, location=N
     return configuration
 
 
-def update_or_create_config_interface(interface, configuration, primary=False):
-    interface_attributes = translators.network_interface_translator.NetworkInterfaceTranslator(interface).translated
+def update_or_create_config_interface(interface, configuration, primary=False, ip_address=None):
+    if ip_address:
+        primary_ip = interface.get('ip_address')
+        interface_attributes = {'ip_address': primary_ip,
+                                'notes': interface.get('ip_notes')}
+    else:
+        interface_attributes = translators.network_interface_translator.NetworkInterfaceTranslator(interface).translated
+        primary_ip = interface.private_ip_address
     config_interface = itglue.ConfigurationInterface.first_or_initialize(
         parent=configuration,
         configuration_id=configuration.id,
-        primary_ip=interface.private_ip_address
+        primary_ip=primary_ip
     )
     config_interface.set_attributes(primary=primary, **interface_attributes)
     config_interface.save()
