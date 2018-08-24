@@ -3,7 +3,7 @@ import translators.workspace_translator
 import itglue_adapter
 import itglue
 from multiprocessing import Process
-
+import argparse
 
 class WorkspaceImportError(Exception):
     pass
@@ -30,7 +30,7 @@ def get_workspaces(workspace_id=None):
     return workspaces
 
 
-def import_workspaces(organization, workspace_id=None, contact=True):
+def import_workspaces(organization, workspace_id=None):
     workspace_type = itglue.ConfigurationType.first_or_create(name='Workspace')
     active_status, inactive_status = itglue_adapter.get_or_create_config_statuses()
 
@@ -39,7 +39,8 @@ def import_workspaces(organization, workspace_id=None, contact=True):
     if workspace_id:
         workspace = get_workspaces(workspace_id)
         workspace_attributes = translate_workspaces(workspace, active_status, inactive_status)
-        update_configuration_and_interfaces(workspace, workspace_attributes, organization, workspace_type)
+        update_configuration_and_interfaces(workspace_attributes, organization, workspace_type)
+        print("finished importing workspace: {}".format(workspace_id))
     else:
         workspaces = get_workspaces()
         for workspace in workspaces:
@@ -67,3 +68,42 @@ def update_configuration_and_interfaces(workspace_attributes, organization, work
     )
     if workspace_attributes.get('ip_address'):
         itglue_adapter.update_or_create_config_interface(workspace_attributes, configuration, primary=True, ip_address=workspace_attributes.get('ip_address'))
+
+
+def main():
+    args = get_args()
+    organization = itglue_adapter.get_organization(args.organization)
+    id = args.workspace_id
+    if args.add_all and id:
+        id = None
+    import_workspaces(organization, workspace_id=id)
+    return True
+
+
+def get_args():
+    parser = argparse.ArgumentParser(
+        description='Import Workspaces as Configurations into a specific IT Glue Organization')
+    parser.add_argument(
+        'organization',
+        metavar='ORG_ID_OR_NAME',
+        type=str,
+        help='Enter the name or ID of the IT Glue Organization'
+    )
+    parser.add_argument(
+        '-id', '--workspace-id',
+        type=str,
+        help="ID of the workspace to be created or updated"
+    )
+    parser.add_argument(
+        '--add-all',
+        action='store_true',
+        help='Add all the workspaces in AWS, will override workspace_id'
+    )
+    args = parser.parse_args()
+    if not args.add_all and not args.workspace_id:
+        parser.error('Must provide an Workspace ID or turn on --add-all flag')
+    return args
+
+
+if __name__ == '__main__':
+    main()
