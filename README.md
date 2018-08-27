@@ -39,7 +39,8 @@ Now we need to install the script dependancies using pip.
 pip install -r requirements.txt
 ```
 
-##### 5. Create AWS stack
+## Importing EC2 Instances via AWS CloudFormation
+##### 1. Create AWS stack
 Now let's create the stack with CloudFormation using the AWS CLI tool.
 ```
 aws cloudformation create-stack \
@@ -51,21 +52,62 @@ aws cloudformation create-stack \
 
 You can check your AWS console to monitor the progress of creating the stack since this can take a few minutes.
 
-##### 6. Create lambda archive
+##### 2. Create lambda archive
 While the stack is being created, we can take the time to create the lambda zip package.
 ```
 python lambda_zip.py
 ```
 
-##### 7. Push zip archive to lambda
+##### 3. Push zip archive to lambda
 Once the stack is up and running, all we need to do is push our zip file to the Lambda
 
 ```
 aws lambda update-function-code --function-name ITGlueEC2SyncFunction --zip-file fileb://lambda_handler.zip
 ```
 
-## Applying changes
+### Applying changes
 
 * If you make changes to your stack, you can change update it with the AWS CLI _cloudformation update-stack_ command.
+* If you make changes to the script, you will need to repeat steps 2 and 3.
 
-* If you make changes to the script, you will need to repeat steps 6 and 7.
+
+## Importing AWS Resources via Terminal
+#### 1. Setting Environment Variables
+The script requires your IT Glue API Key to validate requests and the IT Glue API URL
+```
+export ITGLUE_API_KEY=<YOUR_API_KEY>
+export ITGLUE_API_KEY="https://api.itglue.com"
+```
+
+#### 2. Import EC2 Instances
+You can call the import scripts directly to import or update EC2 Instances. The flags available are:
+
+* -id - imports/updates the instance that matches the instance_id
+* --add-all - imports all of the EC2 instances found in AWS. Will ignore -id flag
+* -il imports the locations associated with each instance
+
+e.g. import 1 single instance without location
+```
+python YOUR_ORG_ID import_ec2.py -id="INSTANCE_ID"
+```
+
+e.g. import all instances with their locations
+```
+python YOUR_ORG_ID import_ec2.py --add-all -il
+```
+
+#### 3.  Import Workspaces
+You can call the import scripts directly to import or update workspaces. The flags available are:
+
+* -id - imports/updates the workspace that matches the workspace_id
+* --add-all - imports all of the workspaces found in your AWS account. Will ignore -id flag
+
+e.g. import 1 single workspace
+```
+python YOUR_ORG_ID import_workspace.py -id="WORKSPACE_ID"
+```
+
+e.g. import all workspaces
+```
+python YOUR_ORG_ID import_workspace.py --add-all
+```

@@ -5,6 +5,7 @@ import itglue
 from multiprocessing import Process
 import argparse
 
+
 class WorkspaceImportError(Exception):
     pass
 
@@ -14,6 +15,7 @@ def get_workspaces(workspace_id=None):
     if workspace_id:
         workspace = workspace_client.describe_workspaces(WorkspaceIds=[workspace_id])
         return workspace.get('Workspaces')[0]
+
     # create list of workspaces
     workspaces = []
     paginator = workspace_client.get_paginator('describe_workspaces')
