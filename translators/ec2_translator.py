@@ -1,7 +1,7 @@
-import base_translator
+import translators.base_translator
 
 
-class EC2Translator(base_translator.BaseTranslator):
+class EC2Translator(translators.base_translator.BaseTranslator):
     FIELDS = [
         'name',
         'serial_number',
@@ -9,9 +9,6 @@ class EC2Translator(base_translator.BaseTranslator):
         'configuration_status_id',
         'mac_address',
         'notes'
-    ]
-    RELATIONSHIPS = [
-        'configuration_interfaces'
     ]
 
     def primary_interface(self):

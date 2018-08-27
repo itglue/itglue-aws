@@ -20,8 +20,10 @@ def create_zip(zip_file_name):
                 print('Compressing package:', package)
                 package_path = os.path.join(folder_path, package)
                 zip_dir(package_path, folder_path, zip_file)
-
+    print('Compressing translators')
+    zip_file = zip_dir('translators', current_path, zip_file)
     return zip_file
+
 
 def zip_dir(path, parent_path, zip_file):
     for folder_path, subfolders, files in os.walk(path):
