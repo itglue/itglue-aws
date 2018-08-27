@@ -29,10 +29,12 @@ class WorkspaceTranslator(translators.base_translator.BaseTranslator):
         notes_dict = {
             'workspace_id': self.data.get('WorkspaceId'),
             'computer_name': self.data.get('Computername'),
+            'compute_type': workspace_props.get('ComputeTypeName'),
             'bundle_id': self.data.get('BundleId'),
             'subnet_id': self.data.get('SubnetId'),
             'directory_id': self.data.get('DirectoryId'),
-            'compute_type': workspace_props.get('ComputeTypeName'),
+            'error_code': self.data.get('ErrorCode'),
+            'error_message': self.data.get('ErrorMessage'),
             'root_volume_size_gib': workspace_props.get('RootVolumeSizeGib'),
             'running_mode': workspace_props.get('RunningMode'),
             'running_mode_auto_stop_timeout_in_min': workspace_props.get('RunningModeAutoStopTimeoutInMinutes'),
