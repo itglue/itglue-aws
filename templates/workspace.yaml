@@ -1,0 +1,64 @@
+Resources:
+  WorkspaceReadPolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "workspace_read_access"
+      Roles:
+        - Ref: "LambdaExecutionRole"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Resource: "*"
+            Action:
+              - "workspaces:DescribeWorkspaces"
+              - "workspaces:DescribeWorkspaceDirectories"
+              - "workspaces:DescribeWorkspaceBundles"
+              - "workspaces:DescribeWorkspacesConnectionStatus"
+  WorkspaceScheduledFunction:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      FunctionName: "ITGWorkspaceScheduledFunction"
+      Handler: "lambda_handler.workspace_handler"
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: fileb://lambda_handler.zip
+      Environment:
+        Variables:
+          ITGLUE_API_KEY:
+            Ref: ITGlueAPIKey
+          ITGLUE_API_URL:
+            Ref: ITGlueAPIURL
+          ORGANIZATION:
+            Ref: ITGlueOrganization
+      Runtime: "python3.6"
+      Timeout: "60"
+
+  WorkspaceScheduledEventRule:
+    Type: "AWS::Events::Rule"
+    Properties:
+      Description: "WorkspaceScheduledEventRule"
+      EventPattern:
+        source:
+          - "aws.workspaces"
+        detail-type:
+          - "AWS Workspace Scheduled Update"
+      ScheduleExpression: "rate(5 minutes)"
+      Targets:
+        - Arn:
+            Fn::GetAtt:
+              - "WorkspaceScheduledFunction"
+              - "Arn"
+          Id: "ITGWorkspaceScheduledFunction"
+
+  PermissionForWorkspaceToInvokeLambda:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName:
+        Ref: "WorkspaceScheduledFunction"
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn:
+        Fn::GetAtt:
+          - "WorkspaceScheduledEventRule"
+          - "Arn"

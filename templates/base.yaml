@@ -1,0 +1,44 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "Creates a lambda function with roles to read EC2 instances and create Cloudwatch logs"
+Parameters:
+  ITGlueAPIURL:
+    Default: https://api.itglue.com
+    Description: The url of the IT Glue API
+    Type: String
+  ITGlueAPIKey:
+    NoEcho: true
+    Description: The IT Glue API Key
+    Type: String
+    MinLength: 1
+  ITGlueOrganization:
+    Description: The name or ID of the IT Glue Organization
+    Type: String
+    MinLength: 1
+
+Resources:
+  LambdaExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: "sts:AssumeRole"
+
+  CloudWatchLogAccessPolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "cloud_watch_logs_access"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: "Allow"
+            Action:
+              - "logs:*"
+            Resource: "*"
+      Roles:
+        -
+          Ref: "LambdaExecutionRole"
