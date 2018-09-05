@@ -12,15 +12,12 @@ class WorkspaceImportError(Exception):
 
 def get_workspaces(workspace_id=None):
     workspace_client = boto3.client('workspaces')
+    workspaces = []
+
     if workspace_id:
         workspace = workspace_client.describe_workspaces(WorkspaceIds=[workspace_id])
         return workspace.get('Workspaces')[0]
-
-    # create list of workspaces
-    workspaces = []
     paginator = workspace_client.get_paginator('describe_workspaces')
-
-    # create workspace page iterator
     response_iterator = paginator.paginate(
         PaginationConfig={
             'PageSize': 10,
@@ -49,8 +46,8 @@ def import_workspaces(organization, workspace_id=None):
             workspace_attributes = translate_workspaces(workspace, active_status, inactive_status)
             process = Process(target=update_configuration_and_interfaces, args=(workspace_attributes, organization, workspace_type))
             processes.append(process)
+        itglue_adapter.batch_start_processes(processes)
         print("finished importing workspaces")
-    itglue_adapter.batch_start_processes(processes)
 
 
 def translate_workspaces(workspace, active_status, inactive_status):

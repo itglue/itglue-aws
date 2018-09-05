@@ -9,7 +9,7 @@ class ImportError(Exception):
 
 
 def get_organization(org_id_or_name):
-    try:  # Try to cast the organization argument into an int to search by ID
+    try:
         org_id = int(org_id_or_name)
         return itglue.Organization.find(org_id)
     except ValueError:  # Organization argument is not a valid int, attempt to search by name
@@ -63,9 +63,13 @@ def batch_start_processes(processes):
     while counter < len(processes):
         if total_count > len(processes):
             total_count = len(processes)
-        for index in range(counter, total_count):
-            processes[index].start()
-        for index in range(counter, total_count):
-            processes[index].join()
+        start_and_join_processes(processes, counter, total_count)
         counter += PROCESS_BATCH_SIZE
         total_count = counter + PROCESS_BATCH_SIZE
+
+
+def start_and_join_processes(processes, counter, total_count):
+    for index in range(counter, total_count):
+        processes[index].start()
+    for index in range(counter, total_count):
+        processes[index].join()

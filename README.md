@@ -78,7 +78,7 @@ The script requires your IT Glue API Key to validate requests and the IT Glue AP
 export ITGLUE_API_KEY=<YOUR_API_KEY>
 export ITGLUE_API_URL="https://api.itglue.com"
 ```
-For EU, the API_URL is "https://api.eu.itglue.com"
+For Frankfurt users, the API_URL is "https://api.eu.itglue.com"
 
 #### 2. Import EC2 Instances
 You can call the import scripts directly to import or update EC2 Instances. The flags available are:
@@ -89,12 +89,12 @@ You can call the import scripts directly to import or update EC2 Instances. The 
 
 e.g. import 1 single instance without location
 ```
-python YOUR_ORG_ID import_ec2.py -id="INSTANCE_ID"
+python import_ec2.py YOUR_ORG_ID  -id="INSTANCE_ID"
 ```
 
 e.g. import all instances with their locations
 ```
-python YOUR_ORG_ID import_ec2.py --add-all -il
+python import_ec2.py YOUR_ORG_ID --add-all -il
 ```
 
 #### 3.  Import Workspaces
@@ -105,10 +105,10 @@ You can call the import scripts directly to import or update workspaces. The fla
 
 e.g. import 1 single workspace
 ```
-python YOUR_ORG_ID import_workspace.py -id="WORKSPACE_ID"
+python import_workspace.py YOUR_ORG_ID -id="WORKSPACE_ID"
 ```
 
 e.g. import all workspaces
 ```
-python YOUR_ORG_ID import_workspace.py --add-all
+python import_workspace.py YOUR_ORG_ID --add-all
 ```
