@@ -1,0 +1,18 @@
+# This file is a template for .parameter that will contain your API Key and the IT Glue API endpoint depending on the region to be used for Cloudformation creation.
+
+# For Oregon users, the IT Glue API endpoint is https://api.itglue.com. For EU users, please use https://api.eu.itglue.com
+
+[
+        {
+            "ParameterKey": "ITGlueAPIKey",
+            "ParameterValue": "YOUR_API_KEY"
+        },
+        {
+            "ParameterKey": "ITGlueAPIURL",
+            "ParameterValue": "IT_GLUE_API_ENDPOINT"
+        },
+        {
+            "ParameterKey": "ITGlueOrganization",
+            "ParameterValue": "YOUR_ORGANIZATION_NAME_OR_ID"
+        }
+]
