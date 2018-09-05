@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: "Creates a lambda function with roles to read EC2 instances and create Cloudwatch logs"
+Description: "Creates a Lambda function, role and Cloudwatch logs for each specified AWS resource"
 Parameters:
   ITGlueAPIURL:
     Default: https://api.itglue.com

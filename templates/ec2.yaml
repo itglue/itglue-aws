@@ -24,8 +24,8 @@ Resources:
   EC2SyncFunction:
     Type: "AWS::Lambda::Function"
     Properties:
-      FunctionName: "ITGlueEC2SyncFunction"
-      Handler: "lambda_handler.handler"
+      FunctionName: "ITGlueEC2SyncFunction1"
+      Handler: "lambda_handler.ec2_handler"
       Role:
         Fn::GetAtt:
           - "LambdaExecutionRole"
@@ -64,7 +64,7 @@ Resources:
     Type: "AWS::Lambda::Permission"
     Properties:
       FunctionName:
-        Ref: "EC2SyncFunction1"
+        Ref: "EC2SyncFunction"
       Action: "lambda:InvokeFunction"
       Principal: "events.amazonaws.com"
       SourceArn:
