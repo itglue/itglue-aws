@@ -24,7 +24,7 @@ Resources:
   EC2SyncFunction:
     Type: "AWS::Lambda::Function"
     Properties:
-      FunctionName: "ITGlueEC2SyncFunction1"
+      FunctionName: "ITGlueEC2SyncFunction"
       Handler: "lambda_handler.ec2_handler"
       Role:
         Fn::GetAtt:

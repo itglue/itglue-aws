@@ -18,7 +18,7 @@ Resources:
   WorkspaceScheduledFunction:
     Type: "AWS::Lambda::Function"
     Properties:
-      FunctionName: "ITGWorkspaceScheduledFunction"
+      FunctionName: "ITGlueWorkspaceSyncFunction"
       Handler: "lambda_handler.workspace_handler"
       Role: !GetAtt LambdaExecutionRole.Arn
       Code:
@@ -43,7 +43,7 @@ Resources:
           - "aws.workspaces"
         detail-type:
           - "AWS Workspace Scheduled Update"
-      ScheduleExpression: "rate(5 minutes)"
+      ScheduleExpression: "cron(0 0 * * 1-5 *)" # Expression can be updated based on  https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html
       Targets:
         - Arn:
             Fn::GetAtt:

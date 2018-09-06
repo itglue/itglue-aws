@@ -1,11 +1,15 @@
-# IT Glue EC2 Import Script
+# IT Glue Import Script
 
-This script creates a lambda function in AWS which syncs your AWS EC2 instances into IT Glue as configurations.
-The lambda is triggered by an AWS CloudWatch Event which is fired on an EC2 instance state change.
+This script creates a CloudFormation stack in AWS which syncs your AWS resources into IT Glue as configurations or flexible assets.
+Each resource will have a lambda function that is either triggered by an AWS CloudWatch Event or it will be triggered on a daily basis.
+
+The script supports the following resources from AWS:
+* EC2 Instances - Instance state change triggers CloudWatch Event which triggers the lambda function. Syncs in as Configurations.
+* Workspaces - Lambda function is invoked at 12:00am UTC Monday to Friday. Syncs in as Configurations.
 
 ## Requirements
 
-You will need Python 3 installed in your system (preferrably version 3.6.5)
+You will need Python 3 installed in your system (preferably version 3.6.5)
 You will also need to have aws-cli installed and configured with your AWS credentials.
 * For information on installing the CLI, see [here](https://docs.aws.amazon.com/cli/latest/userguide/installing.html).
 * For information on configuring your credentials see [here](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html).
@@ -38,37 +42,51 @@ Now we need to install the script dependancies using pip.
 ```
 pip install -r requirements.txt
 ```
+## Creating CloudFormation Stack
+#### 1. Create Parameters file
+Before we can create a CloudFormation stack, the script requires certain parameters to be set. Copy the `parameters_example` to a file named `parameters` at the same folder level.
 
-## Importing EC2 Instances via AWS CloudFormation
-##### 1. Create AWS stack
-Now let's create the stack with CloudFormation using the AWS CLI tool.
+In your `parameters` file, copy and paste in your IT Glue API Key, the correct API endpoint based on your region and the organization name or ID in your account where you wish to import the resources. Make sure you save before moving on to the next step.
+
+#### 2. Create CloudFormation Stack
+Now, we can create the CloudFormation stack. This will spin up a stack that contains a lambda function, a role and a policy specifically for each resource you specified to import.
+
+- STACK_NAME - a unique name for your CloudFormation stack (required)
+- --add-all - imports all the resources we currently support
+- -r, --resources - takes specific resource names separated by spaces. Currently only supports 'workspace', 'ec2'. Will be ignored if --add-all flag is true.
+
+e.g. import only workspaces
 ```
-aws cloudformation create-stack \
-  --stack-name ec2synclambdastack \
-  --template-body file://lambda_config.yml \
-  --capabilities CAPABILITY_IAM  \
-  --parameters ParameterKey=ITGlueAPIKey,ParameterValue="YOUR_API_KEY" ParameterKey=ITGlueOrganization,ParameterValue="YOUR_ORGANIZATION_NAME_OR_ID"
+python create_cloudformation_stack.py STACK_NAME -r workspace
 ```
 
-You can check your AWS console to monitor the progress of creating the stack since this can take a few minutes.
+e.g. import all resources
+```
+python create_cloudformation_stack.py STACK_NAME --add-all
+```
+This will take a few minutes to complete. The command will terminate after the stack is completed successfully; and you can also check your AWS console to monitor the progress.
 
-##### 2. Create lambda archive
-While the stack is being created, we can take the time to create the lambda zip package.
+##### 3. Create lambda archive
+Each lambda function created in the stack will only be functional with a lambda zip package. To zip up the packge, run:
 ```
 python lambda_zip.py
 ```
 
-##### 3. Push zip archive to lambda
-Once the stack is up and running, all we need to do is push our zip file to the Lambda
+##### 4. Push zip archive to lambda
+Now, all we need to do is push our zip file to the Lambda. You can find all of the functions created in the stack in the `Resources` tab in the CloudFormation AWS console.
+
+The convention of the functions are named like `ITGlueWorkspaceSyncFunction` unless changed in the template files.
 
 ```
-aws lambda update-function-code --function-name ITGlueEC2SyncFunction --zip-file fileb://lambda_handler.zip
+aws lambda update-function-code --function-name <FUNCTION_NAME> --zip-file fileb://lambda_handler.zip
 ```
+
+You need to repeat this for each function created in the CloudFormation stack.
 
 ### Applying changes
 
-* If you make changes to your stack, you can change update it with the AWS CLI _cloudformation update-stack_ command.
-* If you make changes to the script, you will need to repeat steps 2 and 3.
+* If you make changes to your stack, you can change update it with the same command in step 2 with the exact same stack name.
+* If you make changes to the script, you will need to repeat steps 3 and 4.
 
 
 ## Importing AWS Resources via Terminal
