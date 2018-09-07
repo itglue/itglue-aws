@@ -2,6 +2,7 @@ import translators.base_translator
 
 
 class NetworkInterfaceTranslator(translators.base_translator.BaseTranslator):
+    """Translates a Network Interface from an EC2 Instance to IT Glue Configuration Interface"""
     FIELDS = [
         'name',
         'ip_address',

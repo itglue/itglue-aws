@@ -1,13 +1,15 @@
 import itglue
 import translators.network_interface_translator
 
+PROCESS_BATCH_SIZE = 100
+
 
 class ImportError(Exception):
     pass
 
 
 def get_organization(org_id_or_name):
-    try:  # Try to cast the organization argument into an int to search by ID
+    try:
         org_id = int(org_id_or_name)
         return itglue.Organization.find(org_id)
     except ValueError:  # Organization argument is not a valid int, attempt to search by name
@@ -32,12 +34,18 @@ def update_or_create_configuration(resource, organization, conf_type, location=N
     return configuration
 
 
-def update_or_create_config_interface(interface, configuration, primary=False):
-    interface_attributes = translators.network_interface_translator.NetworkInterfaceTranslator(interface).translated
+def update_or_create_config_interface(interface, configuration, primary=False, ip_address=None):
+    if ip_address:
+        primary_ip = interface.get('ip_address')
+        interface_attributes = {'ip_address': primary_ip,
+                                'notes': interface.get('ip_notes')}
+    else:
+        interface_attributes = translators.network_interface_translator.NetworkInterfaceTranslator(interface).translated
+        primary_ip = interface.private_ip_address
     config_interface = itglue.ConfigurationInterface.first_or_initialize(
         parent=configuration,
         configuration_id=configuration.id,
-        primary_ip=interface.private_ip_address
+        primary_ip=primary_ip
     )
     config_interface.set_attributes(primary=primary, **interface_attributes)
     config_interface.save()
@@ -47,3 +55,21 @@ def get_or_create_config_statuses():
     active_status = itglue.ConfigurationStatus.first_or_create(name='Active')
     inactive_status = itglue.ConfigurationStatus.first_or_create(name='Inactive')
     return active_status, inactive_status
+
+
+def batch_start_processes(processes):
+    counter = 0
+    total_count = counter + PROCESS_BATCH_SIZE
+    while counter < len(processes):
+        if total_count > len(processes):
+            total_count = len(processes)
+        start_and_join_processes(processes, counter, total_count)
+        counter += PROCESS_BATCH_SIZE
+        total_count = counter + PROCESS_BATCH_SIZE
+
+
+def start_and_join_processes(processes, counter, total_count):
+    for index in range(counter, total_count):
+        processes[index].start()
+    for index in range(counter, total_count):
+        processes[index].join()

@@ -2,6 +2,7 @@ import translators.base_translator
 
 
 class EC2Translator(translators.base_translator.BaseTranslator):
+    """Translates an EC2 Instance into an IT Glue Configuration"""
     FIELDS = [
         'name',
         'serial_number',
