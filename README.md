@@ -78,7 +78,7 @@ The script requires your IT Glue API Key to validate requests and the IT Glue AP
 export ITGLUE_API_KEY=<YOUR_API_KEY>
 export ITGLUE_API_URL="https://api.itglue.com"
 ```
-For Frankfurt users, the API_URL is "https://api.eu.itglue.com"
+For users in Europe, the API_URL is "https://api.eu.itglue.com"
 
 #### 2. Import EC2 Instances
 You can call the import scripts directly to import or update EC2 Instances. The flags available are:

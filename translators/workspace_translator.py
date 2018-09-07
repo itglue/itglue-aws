@@ -2,6 +2,9 @@ import translators.base_translator
 
 
 class WorkspaceTranslator(translators.base_translator.BaseTranslator):
+    """Translates an AWS Workspace to an IT Glue Configuration with an
+    IT Glue Configuration Interface
+    """
     FIELDS = [
         'name',
         'configuration_status_id',
@@ -43,7 +46,7 @@ class WorkspaceTranslator(translators.base_translator.BaseTranslator):
         return self._format_notes(notes_dict)
 
     def _ip_address(self):
-        return self.data.get('IpAddress') or ''
+        return self.data.get('IpAddress', '')
 
     def _ip_notes(self):
         return self._format_notes({'subnet_id': self.data.get('SubnetId')})
