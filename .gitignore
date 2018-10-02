@@ -1,4 +1,4 @@
 *.pyc
 venv/
 .vscode/
-parameters
+parameters.json
