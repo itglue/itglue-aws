@@ -4,13 +4,11 @@ Resources:
     Properties:
       PolicyName: "ec2_read_access"
       Roles:
-        -
-          Ref: "LambdaExecutionRole"
+        - Ref: "LambdaExecutionRole"
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
-          -
-            Effect: "Allow"
+          - Effect: "Allow"
             Resource: "*"
             Action:
               - "ec2:GetHostReservationPurchasePreview"
@@ -21,10 +19,10 @@ Resources:
               - "ec2:GetConsoleOutput"
               - "ec2:Describe*"
 
-  EC2SyncFunction:
+  EC2SyncFunction1:
     Type: "AWS::Lambda::Function"
     Properties:
-      FunctionName: "ITGlueEC2SyncFunction"
+      FunctionName: "ITGlueEC2SyncFunction1"
       Handler: "lambda_handler.ec2_handler"
       Role:
         Fn::GetAtt:
@@ -53,18 +51,17 @@ Resources:
         detail-type:
           - "EC2 Instance State-change Notification"
       Targets:
-        -
-          Arn:
+        - Arn:
             Fn::GetAtt:
-              - "EC2SyncFunction"
+              - "EC2SyncFunction1"
               - "Arn"
-          Id: "ITGlueEC2SyncFunction"
+          Id: "ITGlueEC2SyncFunction1"
 
   PermissionForEC2EventsToInvokeLambda:
     Type: "AWS::Lambda::Permission"
     Properties:
       FunctionName:
-        Ref: "EC2SyncFunction"
+        Ref: "EC2SyncFunction1"
       Action: "lambda:InvokeFunction"
       Principal: "events.amazonaws.com"
       SourceArn:

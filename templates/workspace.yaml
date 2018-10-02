@@ -43,7 +43,8 @@ Resources:
           - "aws.workspaces"
         detail-type:
           - "AWS Workspace Scheduled Update"
-      ScheduleExpression: "cron(0 0 * * 1-5 *)" # Expression can be updated based on  https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html
+      # Set to be triggered everyday Mon-Fri at 12:00am UTC. Expression can be updated based on  https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html
+      ScheduleExpression: "cron(0 0 ? * 2-6 *)"
       Targets:
         - Arn:
             Fn::GetAtt:

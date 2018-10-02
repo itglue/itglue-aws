@@ -44,7 +44,7 @@ pip install -r requirements.txt
 ```
 ## Creating CloudFormation Stack
 #### 1. Create Parameters file
-Before we can create a CloudFormation stack, the script requires certain parameters to be set. Copy the `parameters_example` to a file named `parameters` at the same folder level.
+Before we can create a CloudFormation stack, the script requires certain parameters to be set. Copy the `parameters_example.json` to a file named `parameters.json` at the same folder level.
 
 In your `parameters` file, copy and paste in your IT Glue API Key, the correct API endpoint based on your region and the organization name or ID in your account where you wish to import the resources. Make sure you save before moving on to the next step.
 

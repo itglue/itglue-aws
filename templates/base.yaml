@@ -34,11 +34,9 @@ Resources:
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
-          -
-            Effect: "Allow"
+          - Effect: "Allow"
             Action:
               - "logs:*"
             Resource: "*"
       Roles:
-        -
-          Ref: "LambdaExecutionRole"
+        - Ref: "LambdaExecutionRole"
