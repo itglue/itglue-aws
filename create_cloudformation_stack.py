@@ -107,13 +107,14 @@ def _json_serial(obj):
 def main():
     cf = boto3.client('cloudformation')
     args = get_args()
-    resources = _match_resources(args.resources)
     if args.add_all:
         template = _load_yaml_files(RESOURCES)
-    elif resources:
-        template = _load_yaml_files(resources)
     else:
-        raise ValueError(f'Resources supported are: {RESOURCES}')
+        resources = _match_resources(args.resources)
+        if resources:
+            template = _load_yaml_files(resources)
+        else:
+            raise ValueError(f'Resources supported are: {RESOURCES}')
     params = _parse_parameters()
     with open(template, 'r') as cfn_template:
         cfn_params = {
