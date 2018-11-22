@@ -15,10 +15,10 @@ Resources:
               - "workspaces:DescribeWorkspaceDirectories"
               - "workspaces:DescribeWorkspaceBundles"
               - "workspaces:DescribeWorkspacesConnectionStatus"
-  WorkspaceScheduledFunction:
+  {{functionName}}:
     Type: "AWS::Lambda::Function"
     Properties:
-      FunctionName: "ITGlueWorkspaceSyncFunction"
+      FunctionName: {{functionName}}
       Handler: "lambda_handler.workspace_handler"
       Role: !GetAtt LambdaExecutionRole.Arn
       Code:
@@ -43,20 +43,22 @@ Resources:
           - "aws.workspaces"
         detail-type:
           - "AWS Workspace Scheduled Update"
-      # Set to be triggered everyday Mon-Fri at 12:00am UTC. Expression can be updated based on  https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html
+      # Set to be triggered everyday Mon-Fri at 12:00am UTC. Expression can be
+      # updated based on
+      # https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html
       ScheduleExpression: "cron(0 0 ? * 2-6 *)"
       Targets:
         - Arn:
             Fn::GetAtt:
-              - "WorkspaceScheduledFunction"
+              - {{functionName}}
               - "Arn"
-          Id: "ITGWorkspaceScheduledFunction"
+          Id: "ITG{{functionName}}"
 
   PermissionForWorkspaceToInvokeLambda:
     Type: "AWS::Lambda::Permission"
     Properties:
       FunctionName:
-        Ref: "WorkspaceScheduledFunction"
+        Ref: {{functionName}}
       Action: "lambda:InvokeFunction"
       Principal: "events.amazonaws.com"
       SourceArn:

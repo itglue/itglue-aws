@@ -2,19 +2,23 @@ import argparse
 import boto3
 import botocore
 import datetime
+from jinja2 import Environment, FileSystemLoader
 import json
+import os
 import ruamel.yaml
 
 RESOURCES = ['workspace',
              'ec2'
              ]
 
+DIR_PATH = os.path.dirname(os.path.realpath(__file__))
+
 
 class CfnError(Exception):
     pass
 
 
-def _load_yaml_files(resource_list):
+def _load_yaml_files(stack_name, resource_list):
     """Generates a complete Cloudformation YAML template with specified params
 
     Each specified resource (e.g. ec2) has its own template YAML that contains
@@ -26,15 +30,24 @@ def _load_yaml_files(resource_list):
     with open('./templates/base.yaml') as base:
         base_cfn = yaml.load(base)
     for resource in resource_list:
-        with open(f'./templates/{resource}.yaml', 'r') as file:
-            resource_template = yaml.load(file)
+        function_name = f'{stack_name}{resource}SyncFunction'
+        with open(f'{DIR_PATH}/templates/{resource}.yaml', 'r') as file:
+            new_file = _update_resource_function_name(resource, function_name)
+            resource_template = yaml.load(new_file)
             updated_template = _load_resources(base_cfn, resource_template['Resources'])
             print(f'{resource} template added')
     today_date = str(datetime.datetime.now())
-    with open(f'./cfn_template_{today_date}.yml', 'w') as cfn_template:
+    with open(f'{DIR_PATH}/cfn_template_{today_date}.yml', 'w') as cfn_template:
         yaml.dump(updated_template, cfn_template)
     print('Cloudformation template created')
     return cfn_template.name
+
+
+def _update_resource_function_name(resource, function_name):
+    env = Environment(loader=FileSystemLoader(DIR_PATH))
+    template = env.get_template(f'templates/{resource}.yaml')
+    updated_file = template.render(functionName=function_name)
+    return updated_file
 
 
 def _load_resources(base_cfn, yaml_properties):
@@ -62,9 +75,9 @@ def _update_or_create_stack(cf, cfn_params, stack_name):
         if error_message == 'No updates are to be performed.':
             print("No changes on the stack")
         else:
-            raise
+            raise error
     else:
-        complete_cfn = cf.describe_stacks(StackName=stack_result['StackId'])
+        complete_cfn = cf.describe_stacks(StackName=stack_name)
         print(json.dumps(complete_cfn, indent=2, default=_json_serial))
 
 
@@ -80,19 +93,17 @@ def _stack_exists(cf, stack_name):
 
 
 def _parse_parameters():
-    try:
-        with open('./parameters.json', 'r') as param_file:
-            return json.load(param_file)
-    except OSError:
-        raise
+    with open(f'{DIR_PATH}/parameters.json', 'r') as param_file:
+        return json.load(param_file)
 
 
 def _match_resources(resources):
     new_resources = []
     for resource in resources:
-        if resource.lower() not in RESOURCES:
+        lowercase_resource = resource.lower()
+        if lowercase_resource not in RESOURCES:
             return False
-        new_resources.append(resource.lower())
+        new_resources.append(lowercase_resource)
     return new_resources
 
 
@@ -108,11 +119,11 @@ def main():
     cf = boto3.client('cloudformation')
     args = get_args()
     if args.add_all:
-        template = _load_yaml_files(RESOURCES)
+        template = _load_yaml_files(args.stack_name, RESOURCES)
     else:
         resources = _match_resources(args.resources)
         if resources:
-            template = _load_yaml_files(resources)
+            template = _load_yaml_files(args.stack_name, resources)
         else:
             raise ValueError(f'Resources supported are: {RESOURCES}')
     params = _parse_parameters()
@@ -142,7 +153,7 @@ def get_args():
     parser.add_argument(
         '-r', '--resources',
         nargs='+',
-        help=f'Resources you would like to import from AWS. Currently supports: {RESOURCES}'
+        help=f'Resources you would like to import from AWS separated by spaces. Currently supports: {RESOURCES}'
     )
     args = parser.parse_args()
     if not (args.resources or args.add_all):

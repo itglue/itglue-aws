@@ -102,7 +102,7 @@ Now, all we need to do is push our zip file to the Lambda. You can find all of
 the functions created in the stack in the `Resources` tab in the CloudFormation
 AWS console.
 
-The convention of the functions are named like `ITGlueWorkspaceSyncFunction`
+The convention of the functions are named like `{your_stack_name}workspaceSyncFunction`
 unless changed in the template files.
 
 ```

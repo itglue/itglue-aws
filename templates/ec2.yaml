@@ -19,10 +19,10 @@ Resources:
               - "ec2:GetConsoleOutput"
               - "ec2:Describe*"
 
-  EC2SyncFunction1:
+  {{functionName}}:
     Type: "AWS::Lambda::Function"
     Properties:
-      FunctionName: "ITGlueEC2SyncFunction1"
+      FunctionName: {{functionName}}
       Handler: "lambda_handler.ec2_handler"
       Role:
         Fn::GetAtt:
@@ -53,15 +53,15 @@ Resources:
       Targets:
         - Arn:
             Fn::GetAtt:
-              - "EC2SyncFunction1"
+              - {{functionName}}
               - "Arn"
-          Id: "ITGlueEC2SyncFunction1"
+          Id: "ITGlue{{functionName}}"
 
   PermissionForEC2EventsToInvokeLambda:
     Type: "AWS::Lambda::Permission"
     Properties:
       FunctionName:
-        Ref: "EC2SyncFunction1"
+        Ref: {{functionName}}
       Action: "lambda:InvokeFunction"
       Principal: "events.amazonaws.com"
       SourceArn:
