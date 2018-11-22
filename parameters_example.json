@@ -1,9 +1,3 @@
-# This file is a template for parameters that will contain your API Key and
-# IT Glue API endpoint depending on the region to be used for Cloudformation creation.
-#
-# For North American users, the IT Glue API endpoint is https://api.itglue.com
-# For EU users, please use https://api.eu.itglue.com
-
 [
         {
             "ParameterKey": "ITGlueAPIKey",
