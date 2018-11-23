@@ -24,10 +24,7 @@ Resources:
     Properties:
       FunctionName: {{functionName}}
       Handler: "lambda_handler.ec2_handler"
-      Role:
-        Fn::GetAtt:
-          - "LambdaExecutionRole"
-          - "Arn"
+      Role: !GetAtt LambdaExecutionRole.Arn
       Code:
         ZipFile: fileb://lambda_handler.zip
       Environment:

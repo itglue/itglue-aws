@@ -27,7 +27,7 @@ def _load_yaml_files(stack_name, resource_list):
     base.yaml - contains all the basic details and resources required of a Cloudformation
     """
     yaml = ruamel.yaml.YAML()
-    with open('./templates/base.yaml') as base:
+    with open(f'{DIR_PATH}/templates/base.yaml') as base:
         base_cfn = yaml.load(base)
     for resource in resource_list:
         function_name = f'{stack_name}{resource}SyncFunction'
@@ -82,14 +82,11 @@ def _update_or_create_stack(cf, cfn_params, stack_name):
 
 
 def _stack_exists(cf, stack_name):
-    paginator = cf.get_paginator('list_stacks')
-    for page in paginator.paginate():
-        for stack in page['StackSummaries']:
-            if stack['StackStatus'] == 'DELETE_COMPLETE':
-                continue
-            if stack_name == stack['StackName']:
-                return True
-    return False
+    try:
+        cf.describe_stacks(StackName=stack_name)
+        return True
+    except botocore.exceptions.ClientError:
+        return False
 
 
 def _parse_parameters():

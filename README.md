@@ -14,7 +14,7 @@ Syncs in as Configurations.
 
 ## Requirements
 
-You will need Python 3 installed in your system (preferably version 3.6.5)
+You will need Python 3.6 installed in your system.
 You will also need to have aws-cli installed and configured with your AWS credentials.
 
 - For information on installing the CLI, see [here](https://docs.aws.amazon.com/cli/latest/userguide/installing.html).
