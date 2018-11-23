@@ -31,26 +31,26 @@ to install Python 3 in your system.
 #### 2. Creating virtual environment
 Once you have Python 3.6 installed, create the Python
 virtual environment in the root of this project with the following command:
-```
-python3 -m venv venv
-```
+
+    python3 -m venv venv
+
 
 #### 3. Activate virtual environment
 To activate the virtual environment, use the command below that corresponds to your OS.
 ##### Unix or MacOS
-```
-source venv/bin/activate
-```
+
+    source venv/bin/activate
+
 ##### Windows
-```
-venv\Scripts\activate.bat
-```
+
+    venv\Scripts\activate.bat
+
 
 #### 4. Install dependancies
 Now we need to install the script dependancies using pip.
-```
-pip install -r requirements.txt
-```
+
+    pip install -r requirements.txt
+
 
 ## Creating CloudFormation Stack
 
@@ -78,14 +78,14 @@ you specified to import.
 Currently only supports 'workspace', 'ec2'. Will be ignored if --add-all flag is true.
 
 e.g. import only workspaces
-```
-python create_cloudformation_stack.py STACK_NAME -r workspace
-```
+
+    python create_cloudformation_stack.py STACK_NAME -r workspace
+
 
 e.g. import all resources
-```
-python create_cloudformation_stack.py STACK_NAME --add-all
-```
+
+    python create_cloudformation_stack.py STACK_NAME --add-all
+
 This will take a few minutes to complete. The command will terminate after the
 stack is completed successfully; and you can also check your AWS console to
 monitor the progress.
@@ -93,9 +93,9 @@ monitor the progress.
 #### 3. Create lambda archive
 Each lambda function created in the stack will only be functional with a lambda
 zip package. To zip up the packge, run:
-```
-python lambda_zip.py
-```
+
+    python lambda_zip.py
+
 
 #### 4. Push zip archive to lambda
 Now, all we need to do is push our zip file to the Lambda. You can find all of
@@ -105,9 +105,9 @@ AWS console.
 The convention of the functions are named like `{your_stack_name}workspaceSyncFunction`
 unless changed in the template files.
 
-```
-aws lambda update-function-code --function-name <FUNCTION_NAME> --zip-file fileb://lambda_handler.zip
-```
+
+    aws lambda update-function-code --function-name <FUNCTION_NAME> --zip-file fileb://lambda_handler.zip
+
 
 You need to repeat this for each function created in the CloudFormation stack.
 
@@ -121,11 +121,11 @@ command in step 2 with the exact same stack name.
 ## Importing AWS Resources via Terminal
 #### 1. Setting Environment Variables
 The script requires your IT Glue API Key to validate requests and the IT Glue API URL
-```
-export ITGLUE_API_KEY=<YOUR_API_KEY>
-export ITGLUE_API_URL="https://api.itglue.com"
-```
-For users in Europe, the API_URL is "https://api.eu.itglue.com"
+
+    export ITGLUE_API_KEY=<YOUR_API_KEY>
+    export ITGLUE_API_URL="https://api.itglue.com"
+
+For users in Europe, the API_URL is `https://api.eu.itglue.com`
 
 #### 2. Import EC2 Instances
 You can call the import scripts directly to import or update EC2 Instances.
@@ -137,14 +137,14 @@ The flags available are:
 
 ##### Examples
 - import 1 single instance without location
-```
-python import_ec2.py YOUR_ORG_ID  -id="INSTANCE_ID"
-```
+
+        python import_ec2.py YOUR_ORG_ID  -id="INSTANCE_ID"
+
 
 - import all instances with their locations
-```
-python import_ec2.py YOUR_ORG_ID --add-all -il
-```
+
+        python import_ec2.py YOUR_ORG_ID --add-all -il
+
 
 #### 3. Import Workspaces
 You can call the import scripts directly to import or update workspaces.
@@ -156,11 +156,9 @@ Will ignore -id flag
 
 ##### Examples
 - import 1 single workspace
-```
-python import_workspace.py YOUR_ORG_ID -id="WORKSPACE_ID"
-```
+
+        python import_workspace.py YOUR_ORG_ID -id="WORKSPACE_ID"
 
 - import all workspaces
-```
-python import_workspace.py YOUR_ORG_ID --add-all
-```
+
+        python import_workspace.py YOUR_ORG_ID --add-all
