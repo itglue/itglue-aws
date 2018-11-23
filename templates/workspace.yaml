@@ -1,0 +1,67 @@
+Resources:
+  WorkspaceReadPolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "workspace_read_access"
+      Roles:
+        - Ref: "LambdaExecutionRole"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Resource: "*"
+            Action:
+              - "workspaces:DescribeWorkspaces"
+              - "workspaces:DescribeWorkspaceDirectories"
+              - "workspaces:DescribeWorkspaceBundles"
+              - "workspaces:DescribeWorkspacesConnectionStatus"
+  {{functionName}}:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      FunctionName: {{functionName}}
+      Handler: "lambda_handler.workspace_handler"
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: fileb://lambda_handler.zip
+      Environment:
+        Variables:
+          ITGLUE_API_KEY:
+            Ref: ITGlueAPIKey
+          ITGLUE_API_URL:
+            Ref: ITGlueAPIURL
+          ORGANIZATION:
+            Ref: ITGlueOrganization
+      Runtime: "python3.6"
+      Timeout: "60"
+
+  WorkspaceScheduledEventRule:
+    Type: "AWS::Events::Rule"
+    Properties:
+      Description: "WorkspaceScheduledEventRule"
+      EventPattern:
+        source:
+          - "aws.workspaces"
+        detail-type:
+          - "AWS Workspace Scheduled Update"
+      # Set to be triggered everyday Mon-Fri at 12:00am UTC. Expression can be
+      # updated based on
+      # https://docs.aws.amazon.com/AmazonCloudWatch/latest/events/ScheduledEvents.html
+      ScheduleExpression: "cron(0 0 ? * 2-6 *)"
+      Targets:
+        - Arn:
+            Fn::GetAtt:
+              - {{functionName}}
+              - "Arn"
+          Id: "ITG{{functionName}}"
+
+  PermissionForWorkspaceToInvokeLambda:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName:
+        Ref: {{functionName}}
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn:
+        Fn::GetAtt:
+          - "WorkspaceScheduledEventRule"
+          - "Arn"

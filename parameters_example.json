@@ -1,0 +1,14 @@
+[
+        {
+            "ParameterKey": "ITGlueAPIKey",
+            "ParameterValue": "YOUR_API_KEY"
+        },
+        {
+            "ParameterKey": "ITGlueAPIURL",
+            "ParameterValue": "IT_GLUE_API_ENDPOINT"
+        },
+        {
+            "ParameterKey": "ITGlueOrganization",
+            "ParameterValue": "YOUR_ORGANIZATION_NAME_OR_ID"
+        }
+]

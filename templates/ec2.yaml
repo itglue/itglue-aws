@@ -1,0 +1,67 @@
+Resources:
+  EC2ReadPolicy:
+    Type: "AWS::IAM::Policy"
+    Properties:
+      PolicyName: "ec2_read_access"
+      Roles:
+        - Ref: "LambdaExecutionRole"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Resource: "*"
+            Action:
+              - "ec2:GetHostReservationPurchasePreview"
+              - "ec2:GetConsoleScreenshot"
+              - "ec2:GetLaunchTemplateData"
+              - "ec2:GetReservedInstancesExchangeQuote"
+              - "ec2:GetPasswordData"
+              - "ec2:GetConsoleOutput"
+              - "ec2:Describe*"
+
+  {{functionName}}:
+    Type: "AWS::Lambda::Function"
+    Properties:
+      FunctionName: {{functionName}}
+      Handler: "lambda_handler.ec2_handler"
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Code:
+        ZipFile: fileb://lambda_handler.zip
+      Environment:
+        Variables:
+          ITGLUE_API_KEY:
+            Ref: ITGlueAPIKey
+          ITGLUE_API_URL:
+            Ref: ITGlueAPIURL
+          ORGANIZATION:
+            Ref: ITGlueOrganization
+      Runtime: "python3.6"
+      Timeout: "60"
+
+  EC2StateEventRule:
+    Type: "AWS::Events::Rule"
+    Properties:
+      Description: "EC2StateEventRule"
+      EventPattern:
+        source:
+          - "aws.ec2"
+        detail-type:
+          - "EC2 Instance State-change Notification"
+      Targets:
+        - Arn:
+            Fn::GetAtt:
+              - {{functionName}}
+              - "Arn"
+          Id: "ITGlue{{functionName}}"
+
+  PermissionForEC2EventsToInvokeLambda:
+    Type: "AWS::Lambda::Permission"
+    Properties:
+      FunctionName:
+        Ref: {{functionName}}
+      Action: "lambda:InvokeFunction"
+      Principal: "events.amazonaws.com"
+      SourceArn:
+        Fn::GetAtt:
+          - "EC2StateEventRule"
+          - "Arn"
