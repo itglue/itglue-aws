@@ -85,7 +85,10 @@ def _stack_exists(cf, stack_name):
     try:
         cf.describe_stacks(StackName=stack_name)
         return True
-    except botocore.exceptions.ClientError:
+    except botocore.exceptions.ClientError as e:
+        # If the stack was not found, returns ValidationError code
+        if e.response['Error']['Code'] != 'ValidationError':
+            raise e
         return False
 
 
